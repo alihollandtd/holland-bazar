@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-import re
-import requests
+from googleapiclient.discovery import build
 
 # إعدادات واجهة المستخدم وثبات ألوان البطاقات
 st.set_page_config(page_title="Holland Bazar T&D", layout="centered", page_icon="📦")
@@ -33,11 +32,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# معرف مجلد صور Google Drive العام الخاص بك والمثبت بنجاح
+# معرّف مجلد صور Google Drive العام الخاص بك والمثبت بنجاح
 DRIVE_FOLDER_ID = "1l4jD0-Vuh4SLyoid9zugUGBtDsUBu5A7"
 EXCEL_PATH = "DATABASE.xlsx"        
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=5) # تحديث تلقائي للمخزون كل 5 ثوانٍ بمجرد رفع الإكسل الجديد
 def load_data():
     if os.path.exists(EXCEL_PATH):
         df = pd.read_excel(EXCEL_PATH, dtype=str)
@@ -47,40 +46,41 @@ def load_data():
         return df
     return None
 
-# دالة سحرية تقوم بفحص كود الـ HTML للمجلد العام واستخراج معرفات الصور (File IDs) تلقائياً للمطابقة
-@st.cache_data(ttl=600) # تخزين الروابط مؤقتاً لتسريع الأداء الخارق
-def fetch_drive_images(folder_id):
-    file_mapping = {}
+# دالة ذكية للبحث السحابي الفوري داخل مجلد جوجل درايف العام وجلب معرف الصورة المطابقة بدون حظر
+def find_image_in_drive(search_name, folder_id):
     try:
-        url = f"https://google.com{folder_id}"
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            # استخدام التعابير النمطية للبحث عن أسماء الملفات ومعرفاتها الفريدة من كود الصفحة الداخلي
-            matches = re.findall(r'\["(.*?)"\s*,\s*"(.*?)"\s*,\s*""\s*,\s*"(.*?)"\]', response.text)
-            for item in matches:
-                file_id = item[0]
-                file_name = item[1]
-                # تنظيف الاسم من الامتدادات (.png, .jpg) لتسهيل المطابقة بالباركود أو الكود
-                clean_name = os.path.splitext(file_name)[0].strip()
-                file_mapping[clean_name] = file_id
+        # بناء اتصال عام ومفتوح للبحث في الملفات العامة بدون حظر القيود
+        drive_service = build('drive', 'v3', developerKey=None, authentication=None)
+        
+        # صياغة استعلام بحث متطور يبحث عن اسم الملف داخل مجلدك المشترك
+        query = f"'{folder_id}' in parents and name contains '{search_name}' and trashed = false"
+        results = drive_service.files().list(q=query, fields="files(id, name)").execute()
+        items = results.get('files', [])
+        
+        if items:
+            # إرجاع معرّف أول صورة مطابقة تماماً للاسم
+            return items[0]['id']
     except:
         pass
-    return file_mapping
+    return None
 
 df = load_data()
-images_db = fetch_drive_images(DRIVE_FOLDER_ID)
 
 st.title("📦 Holland Bazar T&D")
 
+# صندوق البحث السحابي الموحد والمتوافق مع متصفحات الموبايل في المخزن الكبير
 search_query = st.text_input("🔍 أدخل الباركود أو الرمز (كود) للبحث:", key="main_search").strip()
 
 if df is not None and not df.empty:
+    # الترتيب الفيزيائي للأعمدة في ملف DATABASE.xlsx:
+    # عمود 0 = كود | عمود 1 = الباركود | عمود 2 = الوصف | عمود 3 = الكمية
     col_code = "0"
     col_barcode = "1"
     col_desc = "2"
     col_qty = "3"
 
     if search_query:
+        # البحث المباشر في عمودي الباركود والكود معاً
         exact_match = df[(df[col_barcode] == search_query) | (df[col_code] == search_query)]
         
         if not exact_match.empty:
@@ -93,6 +93,7 @@ if df is not None and not df.empty:
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
+            # عرض بطاقة البيانات بالترتيب المنضبط
             st.markdown(f"""
             <div class="metric-box">
                 <h3>📝 الوصف: {description}</h3>
@@ -103,25 +104,29 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # محاولة العثور على اسم الصورة في الخريطة الرقمية المجلوبة
+            # 🚀 رحلة البحث الذكية عن الصورة داخل المجلد السحابي بـ 3 محاولات
             img_id = None
-            if barcode != "غير متوفر" and barcode in images_db:
-                img_id = images_db[barcode]
-            elif code in images_db:
-                img_id = images_db[code]
+            
+            # محاولة 1: البحث باسم الباركود الكامل المكتوب
+            if barcode != "غير متوفر":
+                img_id = find_image_in_drive(barcode, DRIVE_FOLDER_ID)
                 
+            # محاولة 2: إذا لم يجدها، يبحث بكود المنتج القصير (مثل GR-55-8)
+            if not img_id and code != "غير متوفر":
+                img_id = find_image_in_drive(code, DRIVE_FOLDER_ID)
+            
+            # عرض الصورة فور العثور عليها وتوليد الرابط المباشر الصحيح
             if img_id:
-                # توليد الرابط المباشر الخارق والدائم لعرض الصورة الفردية بدقة ممتازة
-                final_img_url = f"https://lh3.googleusercontent.com/d/{img_id}"
+                # رابط المعاينة السحابي بدقة كاملة وعالية واضحة للمتصفحات والموبايل
+                final_img_url = f"https://google.com{img_id}&sz=w1000"
                 st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
             else:
-                # حل بديل مؤقت في حال لم ينتهِ سحب القائمة لضمان استقرار العرض
-                fallback_url = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
-                st.image(fallback_url, caption=f"معاينة المنتج السريعة: {code}", use_container_width=True)
+                st.warning(f"⚠️ تفاصيل المنتج صحيحة، ولكن لم يعثر النظام على ملف صورة باسم ({barcode}) أو ({code}) داخل مجلد Google Drive.")
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
             
+            # نظام المقترحات الذكي
             similar_matches = df[df[col_code].str.contains(search_query, na=False, case=False) | 
                                  df[col_barcode].str.contains(search_query, na=False, case=False)]
             
