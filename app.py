@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import requests
 
 # إعدادات واجهة المستخدم وثبات ألوان البطاقات
 st.set_page_config(page_title="Holland Bazar T&D", layout="centered", page_icon="📦")
@@ -32,14 +31,20 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# دمج معرّف مجلد صور Google Drive الخاص بك تلقائياً بنجاح
+# معرف مجلد صور Google Drive الخاص بك والمثبت بنجاح
 DRIVE_FOLDER_ID = "1l4jD0-Vuh4SLyoid9zugUGBtDsUBu5A7"
 EXCEL_PATH = "DATABASE.xlsx"        
 
-@st.cache_data(ttl=5) # تحديث تلقائي للمخزون والجرد كل 5 ثوانٍ بمجرد استبدال ملف الإكسل
+@st.cache_data(ttl=5) # تحديث البيانات تلقائياً كل 5 ثوانٍ بمجرد رفع ملف إكسل جديد
 def load_data():
     if os.path.exists(EXCEL_PATH):
+        # قراءة الملف مع إجبار قراءة كل الأعمدة كنصوص نظيفة وحماية أرقام الباركود الطويلة
         df = pd.read_excel(EXCEL_PATH, dtype=str)
+        # إعادة تسمية الأعمدة داخلياً بأرقام فيزيائية ثابتة لمنع الخلط البرمجي (0, 1, 2, 3)
+        df.columns = [str(i) for i in range(len(df.columns))]
+        # تنظيف الحقول من المسافات العشوائية
+        for col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
         return df
     return None
 
@@ -47,33 +52,32 @@ df = load_data()
 
 st.title("📦 Holland Bazar T&D")
 
-# صندوق البحث المتطور المتوافق مع الهواتف في الممرات البعيدة للمستودع
+# صندوق البحث السحابي الموحد والمتوافق مع متصفحات الموبايل في المخزن الكبير
 search_query = st.text_input("🔍 أدخل الباركود أو الرمز (كود) للبحث:", key="main_search").strip()
 
 if df is not None and not df.empty:
-    df.columns = [str(c).strip() for c in df.columns]
-    
-    col_code_name = df.columns     
-    col_barcode_name = df.columns  
-    col_desc_name = df.columns     
-    col_qty_name = df.columns      
-
-    df[col_code_name] = df[col_code_name].astype(str).str.strip()
-    df[col_barcode_name] = df[col_barcode_name].astype(str).str.strip()
+    # الترتيب الفيزيائي للأعمدة في ملف DATABASE.xlsx الخاص بك:
+    # عمود 0 = كود | عمود 1 = الباركود | عمود 2 = الوصف | عمود 3 = الكمية
+    col_code = "0"
+    col_barcode = "1"
+    col_desc = "2"
+    col_qty = "3"
 
     if search_query:
-        exact_match = df[(df[col_barcode_name] == search_query) | (df[col_code_name] == search_query)]
+        # البحث المباشر في عمودي الباركود والكود معاً بعد حمايتهم
+        exact_match = df[(df[col_barcode] == search_query) | (df[col_code] == search_query)]
         
         if not exact_match.empty:
             row = exact_match.iloc[0]
-            code = str(row[col_code_name]).strip()
-            barcode = str(row[col_barcode_name]).strip()
-            description = str(row[col_desc_name]).strip()
-            quantity = str(row[col_qty_name]).strip()
+            code = str(row[col_code]).strip()
+            barcode = str(row[col_barcode]).strip()
+            description = str(row[col_desc]).strip()
+            quantity = str(row[col_qty]).strip()
             
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
+            # عرض بطاقة البيانات بالترتيب الصحيح والمنضبط والمقاوم للتداخل
             st.markdown(f"""
             <div class="metric-box">
                 <h3>📝 الوصف: {description}</h3>
@@ -84,43 +88,27 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # تحديد اسم الصورة المستهدف البحث عنه سحابياً (الأولوية للباركود ثم الكود)
+            # تحديد اسم الصورة المطلوب سحبها من السحاب (الأولوية للباركود المكتمل ثم الكود لـ 8000 عنصر)
             target_image_name = barcode if barcode != "غير متوفر" else code
             
-            # آلية ذكية للتحقق برمجياً من صيغة الصورة المتوفرة في Google Drive وعرضها فوراً
-            image_extensions = ['jpeg', 'png', 'jpg', 'PNG', 'JPG']
-            img_url_to_use = None
+            # الرابط السحابي الخارق لجلب الصورة بدقتها الأصلية مباشرة وبسرعة فائقة من Google Drive الخاص بك
+            img_url = f"https://googleusercontent.com{DRIVE_FOLDER_ID}"
             
-            for ext in image_extensions:
-                # توليد وتجربة الرابط المباشر لكل صيغة بدقة أصلية كاملة
-                test_url = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
-                
-                # فحص سريع لضمان عمل الرابط وعدم كسر الصورة
-                try:
-                    response = requests.head(test_url, timeout=2)
-                    if response.status_code == 200:
-                        img_url_to_use = test_url
-                        break
-                except:
-                    pass
-            
-            # إذا لم ينجح فحص الـ Thumbnail المباشر، نعتمد على الرابط الافتراضي المستقر للعرض السحابي
-            if not img_url_to_use:
-                img_url_to_use = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
-            
-            st.image(img_url_to_use, caption=f"الصورة الأصلية للمنتج عالية الدقة: {target_image_name}", use_container_width=True)
+            # عرض الصورة حية ومباشرة للموظف على شاشة هاتفه
+            st.image(img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
             
-            similar_matches = df[df[col_code_name].str.contains(search_query, na=False, case=False) | 
-                                 df[col_barcode_name].str.contains(search_query, na=False, case=False)]
+            # نظام المقترحات الذكي وعرض الأكواد المشابهة القريبة
+            similar_matches = df[df[col_code].str.contains(search_query, na=False, case=False) | 
+                                 df[col_barcode].str.contains(search_query, na=False, case=False)]
             
             if not similar_matches.empty:
                 st.markdown("### 💡 هل تقصد أحد هذه الرموز القريبة؟")
                 for idx, row in similar_matches.head(5).iterrows():
-                    sim_code = row[col_code_name]
-                    sim_desc = row[col_desc_name]
+                    sim_code = row[col_code]
+                    sim_desc = row[col_desc]
                     st.markdown(f"""
                     <div class="suggestion-box">
                         <p style='color: #4ade80; font-weight: bold; margin:0;'>كود المنتج المقترح: {sim_code}</p>
@@ -128,4 +116,4 @@ if df is not None and not df.empty:
                     </div>
                     """, unsafe_allow_html=True)
 else:
-    st.error("تأكد من وجود ملف DATABASE.xlsx بجوار ملف app.py في مستودع GitHub.")
+    st.error("تأكد من وجود ملف DATABASE.xlsx في مستودع GitHub الخاص بك بجوار ملف app.py.")
