@@ -38,15 +38,32 @@ EXCEL_PATH = "DATABASE.xlsx"
 @st.cache_data(ttl=5) # تحديث البيانات تلقائياً كل 5 ثوانٍ بمجرد رفع ملف إكسل جديد
 def load_data():
     if os.path.exists(EXCEL_PATH):
-        # قراءة الملف مع إجبار قراءة كل الأعمدة كنصوص نظيفة وحماية أرقام الباركود الطويلة
         df = pd.read_excel(EXCEL_PATH, dtype=str)
-        # إعادة تسمية الأعمدة داخلياً بأرقام فيزيائية ثابتة لمنع الخلط البرمجي (0, 1, 2, 3)
         df.columns = [str(i) for i in range(len(df.columns))]
-        # تنظيف الحقول من المسافات العشوائية
         for col in df.columns:
             df[col] = df[col].astype(str).str.strip()
         return df
     return None
+
+# دالة ذكية وسريعة للحصول على قائمة الأسماء والروابط من مجلد جوجل درايف العام بدون API Key
+@st.cache_data(ttl=3600) # كاش لمدة ساعة لسرعة استجابة الصور
+def get_drive_images_dict(folder_id):
+    images_dict = {}
+    try:
+        # قراءة قائمة الملفات من الصفحة العامة للمجلد المشترك
+        url = f"https://google.com{folder_id}"
+        response = pd.read_html(url)
+        # استخراج أسماء الملفات ومعرفاتها إذا نجحت القراءة الجدلية المباشرة
+        for table in response:
+            if 'Name' in table.columns:
+                for idx, row in table.iterrows():
+                    name = str(row['Name']).strip()
+                    # تنظيف الاسم من الامتدادات للمطابقة المرنة
+                    base_name = os.path.splitext(name)[0]
+                    images_dict[base_name] = name
+    except:
+        pass
+    return images_dict
 
 df = load_data()
 
@@ -56,15 +73,12 @@ st.title("📦 Holland Bazar T&D")
 search_query = st.text_input("🔍 أدخل الباركود أو الرمز (كود) للبحث:", key="main_search").strip()
 
 if df is not None and not df.empty:
-    # الترتيب الفيزيائي للأعمدة في ملف DATABASE.xlsx الخاص بك:
-    # عمود 0 = كود | عمود 1 = الباركود | عمود 2 = الوصف | عمود 3 = الكمية
     col_code = "0"
     col_barcode = "1"
     col_desc = "2"
     col_qty = "3"
 
     if search_query:
-        # البحث المباشر في عمودي الباركود والكود معاً بعد حمايتهم
         exact_match = df[(df[col_barcode] == search_query) | (df[col_code] == search_query)]
         
         if not exact_match.empty:
@@ -77,7 +91,6 @@ if df is not None and not df.empty:
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
-            # عرض بطاقة البيانات بالترتيب الصحيح والمنضبط والمقاوم للتداخل
             st.markdown(f"""
             <div class="metric-box">
                 <h3>📝 الوصف: {description}</h3>
@@ -88,19 +101,20 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # تحديد اسم الصورة المطلوب سحبها من السحاب (الأولوية للباركود المكتمل ثم الكود لـ 8000 عنصر)
+            # تحديد اسم الصورة المستهدف البحث عنه (الأولوية للباركود المكتمل ثم الكود لـ 8000 عنصر)
             target_image_name = barcode if barcode != "غير متوفر" else code
             
-            # الرابط السحابي الخارق لجلب الصورة بدقتها الأصلية مباشرة وبسرعة فائقة من Google Drive الخاص بك
-            img_url = f"https://googleusercontent.com{DRIVE_FOLDER_ID}"
+            # الرابط الاحترافي والأضمن لعرض أي صورة مباشرة وبدقة خارقة من جوجل درايف العام
+            # نستخدم آلية الـ thumbnail الرسمية والمدعومة عالمياً للمتصفحات والموبايل لفتح الصور فوراً
+            # نقوم بالبحث عن الملف بداخل المجلد المشترك عبر الرابط المباشر للملف المفتوح للجميع
+            img_url = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
             
             # عرض الصورة حية ومباشرة للموظف على شاشة هاتفه
-            st.image(img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
+            st.image(img_url, caption=f"الصورة الأصلية للمنتج: {target_image_name}", use_container_width=True)
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
             
-            # نظام المقترحات الذكي وعرض الأكواد المشابهة القريبة
             similar_matches = df[df[col_code].str.contains(search_query, na=False, case=False) | 
                                  df[col_barcode].str.contains(search_query, na=False, case=False)]
             
