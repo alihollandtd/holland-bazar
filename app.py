@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import os
+import re
+import requests
 
 # إعدادات واجهة المستخدم وثبات ألوان البطاقات
 st.set_page_config(page_title="Holland Bazar T&D", layout="centered", page_icon="📦")
@@ -31,11 +33,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# معرف مجلد صور Google Drive الخاص بك والمثبت بنجاح
+# معرف مجلد صور Google Drive العام الخاص بك والمثبت بنجاح
 DRIVE_FOLDER_ID = "1l4jD0-Vuh4SLyoid9zugUGBtDsUBu5A7"
 EXCEL_PATH = "DATABASE.xlsx"        
 
-@st.cache_data(ttl=5) # تحديث البيانات تلقائياً كل 5 ثوانٍ بمجرد رفع ملف إكسل جديد
+@st.cache_data(ttl=10)
 def load_data():
     if os.path.exists(EXCEL_PATH):
         df = pd.read_excel(EXCEL_PATH, dtype=str)
@@ -45,31 +47,31 @@ def load_data():
         return df
     return None
 
-# دالة ذكية وسريعة للحصول على قائمة الأسماء والروابط من مجلد جوجل درايف العام بدون API Key
-@st.cache_data(ttl=3600) # كاش لمدة ساعة لسرعة استجابة الصور
-def get_drive_images_dict(folder_id):
-    images_dict = {}
+# دالة سحرية تقوم بفحص كود الـ HTML للمجلد العام واستخراج معرفات الصور (File IDs) تلقائياً للمطابقة
+@st.cache_data(ttl=600) # تخزين الروابط مؤقتاً لتسريع الأداء الخارق
+def fetch_drive_images(folder_id):
+    file_mapping = {}
     try:
-        # قراءة قائمة الملفات من الصفحة العامة للمجلد المشترك
         url = f"https://google.com{folder_id}"
-        response = pd.read_html(url)
-        # استخراج أسماء الملفات ومعرفاتها إذا نجحت القراءة الجدلية المباشرة
-        for table in response:
-            if 'Name' in table.columns:
-                for idx, row in table.iterrows():
-                    name = str(row['Name']).strip()
-                    # تنظيف الاسم من الامتدادات للمطابقة المرنة
-                    base_name = os.path.splitext(name)[0]
-                    images_dict[base_name] = name
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            # استخدام التعابير النمطية للبحث عن أسماء الملفات ومعرفاتها الفريدة من كود الصفحة الداخلي
+            matches = re.findall(r'\["(.*?)"\s*,\s*"(.*?)"\s*,\s*""\s*,\s*"(.*?)"\]', response.text)
+            for item in matches:
+                file_id = item[0]
+                file_name = item[1]
+                # تنظيف الاسم من الامتدادات (.png, .jpg) لتسهيل المطابقة بالباركود أو الكود
+                clean_name = os.path.splitext(file_name)[0].strip()
+                file_mapping[clean_name] = file_id
     except:
         pass
-    return images_dict
+    return file_mapping
 
 df = load_data()
+images_db = fetch_drive_images(DRIVE_FOLDER_ID)
 
 st.title("📦 Holland Bazar T&D")
 
-# صندوق البحث السحابي الموحد والمتوافق مع متصفحات الموبايل في المخزن الكبير
 search_query = st.text_input("🔍 أدخل الباركود أو الرمز (كود) للبحث:", key="main_search").strip()
 
 if df is not None and not df.empty:
@@ -101,16 +103,21 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # تحديد اسم الصورة المستهدف البحث عنه (الأولوية للباركود المكتمل ثم الكود لـ 8000 عنصر)
-            target_image_name = barcode if barcode != "غير متوفر" else code
-            
-            # الرابط الاحترافي والأضمن لعرض أي صورة مباشرة وبدقة خارقة من جوجل درايف العام
-            # نستخدم آلية الـ thumbnail الرسمية والمدعومة عالمياً للمتصفحات والموبايل لفتح الصور فوراً
-            # نقوم بالبحث عن الملف بداخل المجلد المشترك عبر الرابط المباشر للملف المفتوح للجميع
-            img_url = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
-            
-            # عرض الصورة حية ومباشرة للموظف على شاشة هاتفه
-            st.image(img_url, caption=f"الصورة الأصلية للمنتج: {target_image_name}", use_container_width=True)
+            # محاولة العثور على اسم الصورة في الخريطة الرقمية المجلوبة
+            img_id = None
+            if barcode != "غير متوفر" and barcode in images_db:
+                img_id = images_db[barcode]
+            elif code in images_db:
+                img_id = images_db[code]
+                
+            if img_id:
+                # توليد الرابط المباشر الخارق والدائم لعرض الصورة الفردية بدقة ممتازة
+                final_img_url = f"https://lh3.googleusercontent.com/d/{img_id}"
+                st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
+            else:
+                # حل بديل مؤقت في حال لم ينتهِ سحب القائمة لضمان استقرار العرض
+                fallback_url = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
+                st.image(fallback_url, caption=f"معاينة المنتج السريعة: {code}", use_container_width=True)
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
