@@ -4,14 +4,14 @@ import json
 import struct
 import base64
 import time
-import queue
+import threading
 from io import BytesIO
 
 import requests
 import pandas as pd
 import streamlit as st
 
-from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+from PIL import Image
 
 import cv2
 import numpy as np
@@ -54,11 +54,7 @@ MEGA_API = "https://g.api.mega.co.nz/cs"
 
 
 # ============================================================
-# SIMPLE GLOBAL STYLING
-#
-# IMPORTANT:
-# No HTML cards are used below.
-# Streamlit native containers/cards do the UI.
+# BASIC CSS
 # ============================================================
 
 st.markdown(
@@ -66,13 +62,16 @@ st.markdown(
     <style>
 
     .block-container {
-        max-width: 1180px;
+        max-width: 1200px;
         padding-top: 2rem;
         padding-bottom: 4rem;
     }
 
-    [data-testid="stMetricValue"] {
-        font-size: 2rem;
+    .scanner-guide {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 14px;
+        margin-top: 8px;
     }
 
     </style>
@@ -324,7 +323,7 @@ def mega_api_request(
 
 
 # ============================================================
-# MEGA FILE INDEX
+# MEGA NODES
 # ============================================================
 
 @st.cache_data(
@@ -455,7 +454,7 @@ def get_mega_nodes():
 
 
 # ============================================================
-# FIND PRODUCT IMAGE
+# FIND IMAGE
 # ============================================================
 
 def find_mega_image(
@@ -486,7 +485,7 @@ def find_mega_image(
             value.lower()
         )
 
-    image_extensions = (
+    extensions = (
         ".png",
         ".jpg",
         ".jpeg",
@@ -499,11 +498,10 @@ def find_mega_image(
         for node in nodes
         if node["type"] == 0
         and node["name"].lower().endswith(
-            image_extensions
+            extensions
         )
     ]
 
-    # Exact filename
     for identifier in identifiers:
 
         for node in files:
@@ -516,7 +514,6 @@ def find_mega_image(
 
                 return node
 
-    # Filename contains barcode/code
     for identifier in identifiers:
 
         for node in files:
@@ -533,7 +530,7 @@ def find_mega_image(
 
 
 # ============================================================
-# DOWNLOAD MEGA IMAGE
+# DOWNLOAD IMAGE
 # ============================================================
 
 @st.cache_data(
@@ -569,12 +566,6 @@ def download_mega_image(
         )
 
     key = tuple(node_key)
-
-    if len(key) < 8:
-
-        raise RuntimeError(
-            "Invalid MEGA file key."
-        )
 
     aes_key_words = (
         key[0] ^ key[4],
@@ -624,189 +615,547 @@ def download_mega_image(
         chunk_size=1024 * 1024
     ):
 
-        if not chunk:
-            continue
+        if chunk:
 
-        output.write(
-            decryptor.decrypt(chunk)
-        )
+            output.write(
+                decryptor.decrypt(
+                    chunk
+                )
+            )
 
     return output.getvalue()
 
 
 # ============================================================
-# BARCODE DECODER
+# BARCODE FORMAT FILTER
 # ============================================================
 
-def decode_barcode_frame(
-    frame_bgr
-):
-
-    """
-    Try several intelligently selected versions of the
-    camera frame.
-
-    This is deliberately more aggressive than the previous
-    snapshot-only scanner.
-    """
-
-    if frame_bgr is None:
-        return None
+def retail_formats():
 
     try:
 
-        frame = frame_bgr.copy()
+        return zxingcpp.barcode_formats_from_str(
+            "EAN13|EAN8|UPCA|UPCE|"
+            "Code128|Code39|Code93|ITF|"
+            "ITF14|Codabar|DataBar"
+        )
 
-        height, width = frame.shape[:2]
+    except Exception:
 
-        # ----------------------------------------------------
-        # Resize to a useful processing size.
-        # ----------------------------------------------------
+        return zxingcpp.BarcodeFormats()
 
-        target_width = 1400
 
-        if width > target_width:
+ZX_FORMATS = retail_formats()
 
-            scale = (
-                target_width / width
+
+# ============================================================
+# ZXING DECODER
+# ============================================================
+
+def zxing_decode(
+    image,
+):
+
+    if image is None:
+        return None
+
+    candidates = []
+
+    # Original
+    candidates.append(
+        image
+    )
+
+    # Grayscale
+    if len(image.shape) == 3:
+
+        gray = cv2.cvtColor(
+            image,
+            cv2.COLOR_BGR2GRAY,
+        )
+
+    else:
+
+        gray = image
+
+    candidates.append(
+        gray
+    )
+
+    # CLAHE
+    clahe = cv2.createCLAHE(
+        clipLimit=2.5,
+        tileGridSize=(8, 8),
+    )
+
+    clahe_img = clahe.apply(
+        gray
+    )
+
+    candidates.append(
+        clahe_img
+    )
+
+    # OTSU
+    _, otsu = cv2.threshold(
+        clahe_img,
+        0,
+        255,
+        cv2.THRESH_BINARY
+        + cv2.THRESH_OTSU,
+    )
+
+    candidates.append(
+        otsu
+    )
+
+    # Adaptive threshold
+    adaptive = cv2.adaptiveThreshold(
+        clahe_img,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        7,
+    )
+
+    candidates.append(
+        adaptive
+    )
+
+    # Upscale smaller images
+    enlarged = cv2.resize(
+        gray,
+        None,
+        fx=2.0,
+        fy=2.0,
+        interpolation=cv2.INTER_CUBIC,
+    )
+
+    candidates.append(
+        enlarged
+    )
+
+
+    for candidate in candidates:
+
+        try:
+
+            results = (
+                zxingcpp.read_barcodes(
+                    candidate,
+                    formats=ZX_FORMATS,
+                    try_rotate=True,
+                    try_downscale=False,
+                    try_invert=True,
+                    binarizer=zxingcpp.Binarizer.LocalAverage,
+                )
             )
 
-            frame = cv2.resize(
-                frame,
+        except Exception:
+
+            continue
+
+
+        for result in results:
+
+            if not result.valid:
+                continue
+
+            text = str(
+                result.text
+            ).strip()
+
+            if not text:
+                continue
+
+            text = re.sub(
+                r"\s+",
+                "",
+                text,
+            )
+
+            return {
+                "text": text,
+                "format": str(
+                    result.format
+                ),
+            }
+
+    return None
+
+
+# ============================================================
+# OPEN CV BARCODE DETECTOR
+# ============================================================
+
+@st.cache_resource
+def create_barcode_detector():
+
+    try:
+
+        if not hasattr(
+            cv2,
+            "barcode",
+        ):
+
+            return None
+
+        detector = (
+            cv2.barcode.BarcodeDetector()
+        )
+
+        return detector
+
+    except Exception:
+
+        return None
+
+
+BARCODE_DETECTOR = (
+    create_barcode_detector()
+)
+
+
+# ============================================================
+# PERSPECTIVE WARP
+# ============================================================
+
+def order_points(points):
+
+    points = np.asarray(
+        points,
+        dtype=np.float32,
+    )
+
+    if points.shape[0] != 4:
+
+        return None
+
+    sums = points.sum(
+        axis=1
+    )
+
+    diffs = np.diff(
+        points,
+        axis=1,
+    ).reshape(-1)
+
+    top_left = points[
+        np.argmin(sums)
+    ]
+
+    bottom_right = points[
+        np.argmax(sums)
+    ]
+
+    top_right = points[
+        np.argmin(diffs)
+    ]
+
+    bottom_left = points[
+        np.argmax(diffs)
+    ]
+
+    return np.array(
+        [
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left,
+        ],
+        dtype=np.float32,
+    )
+
+
+def perspective_crop(
+    image,
+    points,
+):
+
+    ordered = order_points(
+        points
+    )
+
+    if ordered is None:
+        return None
+
+    (
+        top_left,
+        top_right,
+        bottom_right,
+        bottom_left,
+    ) = ordered
+
+
+    width_a = np.linalg.norm(
+        bottom_right
+        - bottom_left
+    )
+
+    width_b = np.linalg.norm(
+        top_right
+        - top_left
+    )
+
+    height_a = np.linalg.norm(
+        top_right
+        - bottom_right
+    )
+
+    height_b = np.linalg.norm(
+        top_left
+        - bottom_left
+    )
+
+
+    width = int(
+        max(
+            width_a,
+            width_b,
+        )
+    )
+
+    height = int(
+        max(
+            height_a,
+            height_b,
+        )
+    )
+
+
+    if width < 20 or height < 10:
+        return None
+
+
+    # Barcode needs plenty of horizontal resolution.
+    width = max(
+        width * 3,
+        900,
+    )
+
+    height = max(
+        height * 3,
+        300,
+    )
+
+
+    destination = np.array(
+        [
+            [0, 0],
+            [width - 1, 0],
+            [width - 1, height - 1],
+            [0, height - 1],
+        ],
+        dtype=np.float32,
+    )
+
+
+    matrix = cv2.getPerspectiveTransform(
+        ordered,
+        destination,
+    )
+
+
+    warped = cv2.warpPerspective(
+        image,
+        matrix,
+        (
+            width,
+            height,
+        ),
+        flags=cv2.INTER_CUBIC,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=(255, 255, 255),
+    )
+
+    return warped
+
+
+# ============================================================
+# OPENCV DETECTION
+# ============================================================
+
+def opencv_decode(
+    frame,
+):
+
+    if BARCODE_DETECTOR is None:
+        return None
+
+
+    try:
+
+        image = frame
+
+        height, width = image.shape[:2]
+
+        # Keep enough resolution for small retail barcodes.
+        if width < 1400:
+
+            scale = (
+                1400 / width
+            )
+
+            image = cv2.resize(
+                image,
                 None,
                 fx=scale,
                 fy=scale,
                 interpolation=cv2.INTER_CUBIC,
             )
 
-        height, width = frame.shape[:2]
 
         # ----------------------------------------------------
-        # Candidate images.
+        # First attempt: detector does everything.
         # ----------------------------------------------------
 
-        candidates = []
+        try:
 
-        # Full image
-        candidates.append(frame)
+            (
+                ok,
+                decoded_info,
+                decoded_type,
+                points,
+            ) = (
+                BARCODE_DETECTOR
+                .detectAndDecodeWithType(
+                    image
+                )
+            )
 
-        # Central region
-        x1 = int(width * 0.05)
-        x2 = int(width * 0.95)
+            if ok:
 
-        y1 = int(height * 0.10)
-        y2 = int(height * 0.90)
+                for value in decoded_info:
 
-        candidates.append(
-            frame[y1:y2, x1:x2]
+                    if value:
+
+                        value = re.sub(
+                            r"\s+",
+                            "",
+                            str(value),
+                        )
+
+                        if value:
+
+                            return {
+                                "text": value,
+                                "format": (
+                                    str(
+                                        decoded_type[
+                                            0
+                                        ]
+                                    )
+                                    if decoded_type
+                                    else "barcode"
+                                ),
+                            }
+
+        except Exception:
+
+            pass
+
+
+        # ----------------------------------------------------
+        # Second attempt:
+        #
+        # Detect the barcode rectangle even if OpenCV
+        # couldn't decode it.
+        # ----------------------------------------------------
+
+        try:
+
+            detected, points = (
+                BARCODE_DETECTOR.detect(
+                    image
+                )
+            )
+
+        except Exception:
+
+            detected = False
+            points = None
+
+
+        if not detected:
+            return None
+
+        if points is None:
+            return None
+
+
+        # Normalize point layout.
+        points_array = np.asarray(
+            points
         )
 
-        # Central horizontal scanning area
-        y1 = int(height * 0.25)
-        y2 = int(height * 0.75)
 
-        candidates.append(
-            frame[y1:y2, :]
-        )
+        # OpenCV normally returns:
+        # N x 4 x 2
+        #
+        # but handle flat layouts too.
 
-        # ----------------------------------------------------
-        # Process each candidate.
-        # ----------------------------------------------------
+        if (
+            points_array.ndim == 3
+            and points_array.shape[-2:] == (4, 2)
+        ):
 
-        for image in candidates:
+            rectangles = (
+                points_array
+            )
 
-            if image is None:
-                continue
+        elif (
+            points_array.ndim == 2
+            and points_array.shape[1] == 2
+            and len(points_array) >= 4
+        ):
 
-            if image.size == 0:
-                continue
-
-            # Original
-            versions = [
-                image
+            rectangles = [
+                points_array[
+                    :4
+                ]
             ]
 
-            # Grayscale
-            gray = cv2.cvtColor(
+        else:
+
+            return None
+
+
+        # ----------------------------------------------------
+        # Decode each detected barcode region.
+        # ----------------------------------------------------
+
+        for rectangle in rectangles:
+
+            crop = perspective_crop(
                 image,
-                cv2.COLOR_BGR2GRAY,
+                rectangle,
             )
 
-            versions.append(gray)
+            if crop is None:
+                continue
 
-            # CLAHE
-            clahe = cv2.createCLAHE(
-                clipLimit=2.0,
-                tileGridSize=(8, 8),
+
+            # Add white quiet-zone border.
+            crop = cv2.copyMakeBorder(
+                crop,
+                80,
+                80,
+                120,
+                120,
+                cv2.BORDER_CONSTANT,
+                value=(255, 255, 255),
             )
 
-            enhanced = clahe.apply(
-                gray
+
+            result = zxing_decode(
+                crop
             )
 
-            versions.append(
-                enhanced
-            )
+            if result:
 
-            # OTSU threshold
-            _, threshold = cv2.threshold(
-                enhanced,
-                0,
-                255,
-                cv2.THRESH_BINARY
-                + cv2.THRESH_OTSU,
-            )
+                return result
 
-            versions.append(
-                threshold
-            )
-
-            # ------------------------------------------------
-            # Decode
-            # ------------------------------------------------
-
-            for version in versions:
-
-                try:
-
-                    results = (
-                        zxingcpp.read_barcodes(
-                            version,
-                            try_rotate=True,
-                            try_downscale=False,
-                            try_invert=True,
-                        )
-                    )
-
-                except Exception:
-
-                    continue
-
-                for result in results:
-
-                    if not result.valid:
-                        continue
-
-                    value = str(
-                        result.text
-                    ).strip()
-
-                    if not value:
-                        continue
-
-                    # Remove accidental whitespace
-                    value = re.sub(
-                        r"\s+",
-                        "",
-                        value,
-                    )
-
-                    return {
-                        "text": value,
-                        "format": str(
-                            result.format
-                        ),
-                    }
 
         return None
 
@@ -816,65 +1165,137 @@ def decode_barcode_frame(
 
 
 # ============================================================
-# LIVE CAMERA SCANNER
+# MASTER BARCODE DECODER
+# ============================================================
+
+def decode_frame(
+    frame,
+):
+
+    if frame is None:
+        return None
+
+
+    # --------------------------------------------------------
+    # OpenCV barcode detector + perspective correction
+    # --------------------------------------------------------
+
+    result = opencv_decode(
+        frame
+    )
+
+    if result:
+
+        return result
+
+
+    # --------------------------------------------------------
+    # ZXing fallback on strategically cropped regions.
+    # --------------------------------------------------------
+
+    image = frame
+
+    h, w = image.shape[:2]
+
+
+    candidates = [
+        image,
+
+        image[
+            int(h * 0.15):
+            int(h * 0.85),
+            int(w * 0.05):
+            int(w * 0.95)
+        ],
+
+        image[
+            int(h * 0.25):
+            int(h * 0.75),
+            :
+        ],
+
+        image[
+            int(h * 0.35):
+            int(h * 0.65),
+            :
+        ],
+    ]
+
+
+    for candidate in candidates:
+
+        result = zxing_decode(
+            candidate
+        )
+
+        if result:
+
+            return result
+
+
+    return None
+
+
+# ============================================================
+# CAMERA SHARED STATE
+# ============================================================
+
+if "barcode_result" not in st.session_state:
+
+    st.session_state[
+        "barcode_result"
+    ] = ""
+
+
+if "barcode_format" not in st.session_state:
+
+    st.session_state[
+        "barcode_format"
+    ] = ""
+
+
+if "scanner_running" not in st.session_state:
+
+    st.session_state[
+        "scanner_running"
+    ] = False
+
+
+# Thread-safe scanner state.
+scanner_lock = threading.Lock()
+
+scanner_state = {
+    "result": None,
+    "last_attempt": 0.0,
+}
+
+
+# ============================================================
+# LIVE SCANNER
 # ============================================================
 
 def render_live_scanner():
 
     st.subheader(
-        "📷 مسح الباركود"
+        "📷 الماسح المباشر"
     )
 
     st.caption(
-        "وجّه الكاميرا نحو الباركود. "
-        "عند التعرف عليه سيتم فتح المنتج تلقائياً."
+        "ضع الباركود داخل المستطيل الأخضر، "
+        "واجعله واضحاً وكبيراً في الكاميرا."
     )
 
-    if "scanner_enabled" not in st.session_state:
 
-        st.session_state[
-            "scanner_enabled"
-        ] = False
-
-    if "scanned_barcode" not in st.session_state:
-
-        st.session_state[
-            "scanned_barcode"
-        ] = ""
-
-
-    scanner_enabled = st.toggle(
-        "تشغيل الكاميرا",
-        value=st.session_state[
-            "scanner_enabled"
-        ],
-        key="scanner_toggle",
+    st.info(
+        "💡 للحصول على أفضل قراءة: "
+        "اقترب من الباركود، تجنب انعكاس الضوء، "
+        "واجعل الخطوط أفقية داخل الإطار."
     )
 
-    st.session_state[
-        "scanner_enabled"
-    ] = scanner_enabled
 
-
-    if not scanner_enabled:
-
-        st.info(
-            "فعّل الكاميرا لبدء مسح الباركود."
-        )
-
-        return
-
-
-    # Queue shared between the camera callback
-    # and Streamlit main thread.
-    result_queue = queue.Queue(
-        maxsize=1
-    )
-
-    last_scan_time = {
-        "value": 0.0
-    }
-
+    # --------------------------------------------------------
+    # Camera
+    # --------------------------------------------------------
 
     def video_frame_callback(
         frame
@@ -884,50 +1305,57 @@ def render_live_scanner():
             format="bgr24"
         )
 
+
         now = time.monotonic()
 
-        # Don't run the decoder on every single frame.
-        if (
-            now
-            - last_scan_time["value"]
-            > 0.18
-        ):
 
-            last_scan_time[
-                "value"
+        # Don't run expensive processing on every frame.
+        should_scan = (
+            now
+            - scanner_state[
+                "last_attempt"
+            ]
+            >= 0.20
+        )
+
+
+        if should_scan:
+
+            scanner_state[
+                "last_attempt"
             ] = now
 
-            decoded = (
-                decode_barcode_frame(
-                    image
-                )
+
+            result = decode_frame(
+                image
             )
 
-            if decoded:
 
-                try:
+            if result:
 
-                    result_queue.put_nowait(
-                        decoded
-                    )
+                with scanner_lock:
 
-                except queue.Full:
+                    scanner_state[
+                        "result"
+                    ] = result
 
-                    pass
 
         # ----------------------------------------------------
-        # Draw scanner guide
+        # Scanner guide
         # ----------------------------------------------------
 
         h, w = image.shape[:2]
 
+
+        # Wide horizontal barcode box.
         box_width = int(
-            w * 0.78
+            w * 0.82
         )
 
         box_height = int(
             h * 0.30
         )
+
 
         left = (
             w - box_width
@@ -937,22 +1365,50 @@ def render_live_scanner():
             h - box_height
         ) // 2
 
-        right = left + box_width
-        bottom = top + box_height
+        right = (
+            left + box_width
+        )
 
-        # Dark translucent-ish guide via lines.
+        bottom = (
+            top + box_height
+        )
+
+
+        # Outer box
         cv2.rectangle(
             image,
             (left, top),
             (right, bottom),
-            (255, 255, 255),
+            (0, 255, 0),
             3,
         )
 
-        # Corner markers
-        corner = 35
 
-        thickness = 6
+        # Center scan line
+        center_y = (
+            top + bottom
+        ) // 2
+
+
+        cv2.line(
+            image,
+            (
+                left + 20,
+                center_y,
+            ),
+            (
+                right - 20,
+                center_y,
+            ),
+            (0, 255, 0),
+            2,
+        )
+
+
+        # Corner markers
+        corner = 45
+        thickness = 7
+
 
         # Top-left
         cv2.line(
@@ -971,6 +1427,7 @@ def render_live_scanner():
             thickness,
         )
 
+
         # Top-right
         cv2.line(
             image,
@@ -987,6 +1444,7 @@ def render_live_scanner():
             (0, 255, 0),
             thickness,
         )
+
 
         # Bottom-left
         cv2.line(
@@ -1005,6 +1463,7 @@ def render_live_scanner():
             thickness,
         )
 
+
         # Bottom-right
         cv2.line(
             image,
@@ -1022,6 +1481,7 @@ def render_live_scanner():
             thickness,
         )
 
+
         return av.VideoFrame.from_ndarray(
             image,
             format="bgr24",
@@ -1029,7 +1489,7 @@ def render_live_scanner():
 
 
     ctx = webrtc_streamer(
-        key="barcode-live-scanner",
+        key="warehouse-barcode-scanner",
 
         mode=WebRtcMode.SENDRECV,
 
@@ -1040,10 +1500,10 @@ def render_live_scanner():
         media_stream_constraints={
             "video": {
                 "width": {
-                    "ideal": 1280
+                    "ideal": 1920
                 },
                 "height": {
-                    "ideal": 720
+                    "ideal": 1080
                 },
                 "facingMode": {
                     "ideal": "environment"
@@ -1069,52 +1529,159 @@ def render_live_scanner():
 
 
     # --------------------------------------------------------
-    # Wait for a result while the camera is active.
+    # Wait for scanner result
     # --------------------------------------------------------
 
     if ctx.state.playing:
 
-        status = st.empty()
+        result_placeholder = st.empty()
 
-        status.info(
-            "🔎 جاري البحث عن الباركود..."
-        )
 
         while ctx.state.playing:
 
-            try:
+            with scanner_lock:
 
-                result = (
-                    result_queue.get(
-                        timeout=0.25
-                    )
-                )
+                result = scanner_state[
+                    "result"
+                ]
 
-            except queue.Empty:
 
-                continue
+            if result:
 
-            barcode = result[
-                "text"
-            ]
+                # Clear immediately so it doesn't repeat.
+                with scanner_lock:
+
+                    scanner_state[
+                        "result"
+                    ] = None
+
+
+                st.session_state[
+                    "barcode_result"
+                ] = result["text"]
+
+                st.session_state[
+                    "barcode_format"
+                ] = result["format"]
+
+
+                st.session_state[
+                    "scanner_running"
+                ] = False
+
+
+                st.rerun()
+
+
+            result_placeholder.info(
+                "🔎 جاري التعرف على الباركود..."
+            )
+
+
+            time.sleep(
+                0.10
+            )
+
+
+# ============================================================
+# PHOTO SCANNER
+# ============================================================
+
+def render_photo_scanner():
+
+    st.subheader(
+        "📸 مسح من صورة"
+    )
+
+    st.caption(
+        "إذا كانت الإضاءة أو الكاميرا تمنع القراءة المباشرة، "
+        "التقط صورة واضحة للباركود هنا."
+    )
+
+
+    photo = st.camera_input(
+        "التقاط صورة للباركود",
+        key="barcode_photo",
+    )
+
+
+    if photo is None:
+
+        return
+
+
+    try:
+
+        image = Image.open(
+            BytesIO(
+                photo.getvalue()
+            )
+        ).convert(
+            "RGB"
+        )
+
+
+        frame = cv2.cvtColor(
+            np.array(image),
+            cv2.COLOR_RGB2BGR,
+        )
+
+
+        with st.spinner(
+            "جاري تحليل الباركود..."
+        ):
+
+            result = decode_frame(
+                frame
+            )
+
+
+        if result:
+
+            st.success(
+                f"تمت قراءة الباركود: "
+                f"{result['text']}"
+            )
 
             st.session_state[
-                "scanned_barcode"
-            ] = barcode
+                "barcode_result"
+            ] = result["text"]
 
             st.session_state[
-                "scanner_enabled"
-            ] = False
-
-            st.session_state[
-                "scanner_toggle"
-            ] = False
+                "barcode_format"
+            ] = result["format"]
 
             st.rerun()
 
 
+        else:
+
+            st.error(
+                "لم أتمكن من قراءة الباركود من الصورة."
+            )
+
+            st.image(
+                image,
+                caption="الصورة التي تم تحليلها",
+                width="stretch",
+            )
+
+
+            st.warning(
+                "حاول أن تجعل الباركود يحتل معظم الصورة "
+                "وأن يكون خارج الإطار/اللمعان."
+            )
+
+
+    except Exception as e:
+
+        st.error(
+            f"خطأ أثناء تحليل الصورة: {e}"
+        )
+
+
 # ============================================================
-# SEARCH / PRODUCT UI
+# PRODUCT
 # ============================================================
 
 def render_product(
@@ -1138,8 +1705,9 @@ def render_product(
     if matches.empty:
 
         st.error(
-            "لم يتم العثور على المنتج."
+            "❌ لم يتم العثور على المنتج."
         )
+
 
         similar = df[
             df[col_code].str.contains(
@@ -1164,6 +1732,7 @@ def render_product(
                 "نتائج مشابهة"
             )
 
+
             for _, row in (
                 similar.head(5).iterrows()
             ):
@@ -1179,6 +1748,7 @@ def render_product(
                 barcode = str(
                     row[col_barcode]
                 ).strip()
+
 
                 with st.container(
                     border=True
@@ -1196,11 +1766,8 @@ def render_product(
         return
 
 
-    # ========================================================
-    # PRODUCT
-    # ========================================================
-
     row = matches.iloc[0]
+
 
     code = str(
         row[col_code]
@@ -1244,12 +1811,13 @@ def render_product(
 
 
     # ========================================================
-    # PRODUCT HEADER
+    # PRODUCT CARD
     # ========================================================
 
     st.success(
-        "تم العثور على المنتج"
+        "✅ تم العثور على المنتج"
     )
+
 
     with st.container(
         border=True
@@ -1261,7 +1829,8 @@ def render_product(
 
         st.divider()
 
-        info1, info2, info3 = (
+
+        col1, col2, col3 = (
             st.columns(
                 3,
                 gap="large",
@@ -1269,7 +1838,7 @@ def render_product(
         )
 
 
-        with info1:
+        with col1:
 
             st.metric(
                 "كود المنتج",
@@ -1277,7 +1846,7 @@ def render_product(
             )
 
 
-        with info2:
+        with col2:
 
             st.metric(
                 "الباركود",
@@ -1285,7 +1854,7 @@ def render_product(
             )
 
 
-        with info3:
+        with col3:
 
             st.metric(
                 "الكمية",
@@ -1300,6 +1869,7 @@ def render_product(
     st.subheader(
         "🖼️ صورة المنتج"
     )
+
 
     try:
 
@@ -1319,8 +1889,7 @@ def render_product(
         if image_node is None:
 
             st.info(
-                "لا توجد صورة مرتبطة بهذا "
-                "الكود أو الباركود."
+                "لا توجد صورة مرتبطة بهذا المنتج."
             )
 
             return
@@ -1334,23 +1903,17 @@ def render_product(
         )
 
 
-        # ----------------------------------------------------
-        # Resize image for a clean website presentation.
-        # ----------------------------------------------------
-
         image = Image.open(
-            BytesIO(image_bytes)
+            BytesIO(
+                image_bytes
+            )
         )
-
-
-        max_width = 520
-        max_height = 620
 
 
         image.thumbnail(
             (
-                max_width,
-                max_height,
+                600,
+                650,
             ),
             Image.Resampling.LANCZOS,
         )
@@ -1367,7 +1930,7 @@ def render_product(
 
             st.image(
                 image,
-                width=500,
+                width="stretch",
             )
 
             st.caption(
@@ -1392,7 +1955,7 @@ df = load_data()
 if df is None:
 
     st.error(
-        "ملف DATABASE.xlsx غير موجود."
+        "❌ ملف DATABASE.xlsx غير موجود."
     )
 
     st.stop()
@@ -1401,7 +1964,7 @@ if df is None:
 if df.empty:
 
     st.error(
-        "ملف DATABASE.xlsx فارغ."
+        "❌ ملف DATABASE.xlsx فارغ."
     )
 
     st.stop()
@@ -1416,62 +1979,66 @@ st.title(
 )
 
 st.caption(
-    "نظام البحث السريع عن المنتجات والمخزون"
+    "البحث عن المنتجات والمخزون"
 )
 
 st.divider()
 
 
 # ============================================================
-# SEARCH / SCANNER TABS
+# TABS
 # ============================================================
 
-search_tab, scanner_tab = st.tabs(
+search_tab, live_tab, photo_tab = st.tabs(
     [
-        "🔎 البحث عن منتج",
-        "📷 مسح الباركود",
+        "🔎 البحث",
+        "📷 الماسح المباشر",
+        "📸 صورة الباركود",
     ]
 )
 
 
 # ============================================================
-# SEARCH TAB
+# SEARCH
 # ============================================================
 
 with search_tab:
 
-    scanned_value = st.session_state.get(
-        "scanned_barcode",
+    scanned = st.session_state.get(
+        "barcode_result",
         "",
     )
 
 
-    search_query = st.text_input(
-        "الباركود أو كود المنتج",
-        value=scanned_value,
-        placeholder="مثال: 6932308668058",
-        key="product_search",
-    ).strip()
-
-
-    if scanned_value:
+    if scanned:
 
         st.success(
-            f"تمت قراءة الباركود من الكاميرا: "
-            f"{scanned_value}"
+            f"📷 الباركود المقروء: **{scanned}**"
         )
 
 
         if st.button(
-            "مسح نتيجة المسح",
+            "✕ إلغاء نتيجة المسح",
             use_container_width=True,
         ):
 
             st.session_state[
-                "scanned_barcode"
+                "barcode_result"
+            ] = ""
+
+            st.session_state[
+                "barcode_format"
             ] = ""
 
             st.rerun()
+
+
+    search_query = st.text_input(
+        "الباركود أو كود المنتج",
+        value=scanned,
+        placeholder="مثال: 6932308668058",
+        key="product_search",
+    ).strip()
 
 
     if search_query:
@@ -1485,14 +2052,23 @@ with search_tab:
 
         st.info(
             "أدخل الباركود أو كود المنتج، "
-            "أو استخدم تبويب «مسح الباركود»."
+            "أو استخدم أحد الماسحين."
         )
 
 
 # ============================================================
-# SCANNER TAB
+# LIVE SCANNER
 # ============================================================
 
-with scanner_tab:
+with live_tab:
 
     render_live_scanner()
+
+
+# ============================================================
+# PHOTO SCANNER
+# ============================================================
+
+with photo_tab:
+
+    render_photo_scanner()
