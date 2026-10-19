@@ -601,24 +601,42 @@ def barcode_candidates_from_image(uploaded_file):
 
     found = {}
 
-    symbols = [
-        ZBarSymbol.EAN13,
-        ZBarSymbol.EAN8,
-        ZBarSymbol.UPCA,
-        ZBarSymbol.UPCE,
-        ZBarSymbol.CODE128,
-        ZBarSymbol.CODE39,
-        ZBarSymbol.CODE93,
-        ZBarSymbol.ITF,
-        ZBarSymbol.CODABAR,
+    # pyzbar/ZBar uses I25 for Interleaved 2 of 5.
+    # Some builds do not expose every symbol as an enum member,
+    # so build this list defensively instead of accessing a
+    # missing attribute such as ZBarSymbol.ITF.
+    symbol_names = [
+        "EAN13",
+        "EAN8",
+        "UPCA",
+        "UPCE",
+        "CODE128",
+        "CODE39",
+        "CODE93",
+        "I25",
+        "CODABAR",
     ]
+
+    symbols = [
+        getattr(ZBarSymbol, name)
+        for name in symbol_names
+        if hasattr(ZBarSymbol, name)
+    ]
+
+    # If a particular ZBar build exposes no symbol constants,
+    # let ZBar use its normal default decoder set.
+    if not symbols:
+        symbols = None
 
     for variant_name, image in variants:
         try:
-            decoded = zbar_decode(
-                image,
-                symbols=symbols,
-            )
+            if symbols is None:
+                decoded = zbar_decode(image)
+            else:
+                decoded = zbar_decode(
+                    image,
+                    symbols=symbols,
+                )
         except Exception:
             continue
 
