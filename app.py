@@ -54,7 +54,7 @@ st.markdown(
         background-color: #f8fafc;
     }
 
-    /* Hide Streamlit elements */
+    /* Hide Streamlit default header/footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -68,8 +68,7 @@ st.markdown(
         font-size: 28px;
         font-weight: 800;
         margin-bottom: 24px;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        letter-spacing: -0.5px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     }
 
     /* Input styling */
@@ -82,7 +81,6 @@ st.markdown(
         font-family: 'Cairo', sans-serif;
         font-size: 16px;
         background-color: #ffffff;
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     }
     .stTextInput input:focus {
         border-color: #3b82f6;
@@ -95,7 +93,7 @@ st.markdown(
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         padding: 24px;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
         margin-bottom: 16px;
     }
 
@@ -106,7 +104,7 @@ st.markdown(
         padding: 24px;
         text-align: center;
         margin: 20px 0;
-        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
         border: 1px solid #334155;
     }
 
@@ -122,17 +120,14 @@ st.markdown(
         color: #94a3b8;
         font-size: 15px;
         font-weight: 600;
-        letter-spacing: 0.5px;
     }
 
-    /* Subheaders styling */
     .stSubheader {
         font-family: 'Cairo', sans-serif !important;
         font-weight: 700 !important;
         color: #1e293b !important;
     }
 
-    /* Images */
     img {
         border-radius: 12px;
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
@@ -452,7 +447,7 @@ def get_mega_nodes():
             # ------------------------------------------------
             # Public-folder node keys have this form:
             #
-            #     something:ENCRYPTED_KEY
+            #      something:ENCRYPTED_KEY
             #
             # We need the part after ":".
             # ------------------------------------------------
@@ -1033,7 +1028,7 @@ else:
             regex=False,
         )
         |
-        df[col_col_barcode if 'col_col_barcode' in locals() else col_barcode].str.contains(
+        df[col_barcode].str.contains(
             search_query,
             na=False,
             case=False,
