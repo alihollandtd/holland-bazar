@@ -4,6 +4,7 @@ openpyxl
 requests
 pycryptodome
 Pillow
-opencv-python-headless
-zxing-cpp==3.1.1
+numpy
+opencv-contrib-python-headless
+zxing-cpp
 streamlit-webrtc==0.70.1
