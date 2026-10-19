@@ -1,3 +1,4 @@
+
 import os
 import re
 import json
@@ -14,7 +15,7 @@ from Crypto.Cipher import AES
 
 
 # ============================================================
-# APP CONFIG
+# PAGE
 # ============================================================
 
 st.set_page_config(
@@ -26,7 +27,8 @@ st.set_page_config(
 
 EXCEL_PATH = "DATABASE.xlsx"
 
-# Keep your existing public MEGA folder here.
+# Your existing public MEGA folder.
+# Keep this value unchanged if your folder is unchanged.
 MEGA_FOLDER_URL = (
     "https://mega.nz/folder/HrximbwC"
     "#9wvR9D8OQnrAJlTItE6Oag"
@@ -36,847 +38,98 @@ MEGA_API = "https://g.api.mega.co.nz/cs"
 
 
 # ============================================================
-# PROFESSIONAL UI
+# NATIVE STREAMLIT UI STYLING
+#
+# IMPORTANT:
+# The previous version used large amounts of raw HTML in
+# st.markdown(). This version deliberately does NOT do that.
+# The visible application UI is built with Streamlit widgets,
+# containers, columns and metrics, so HTML source cannot appear
+# as text in the page.
 # ============================================================
 
 st.markdown(
     """
-<style>
-:root {
-    --bg: #07111f;
-    --panel: #0d1b2a;
-    --panel-2: #102238;
-    --border: #20344d;
-    --border-soft: #1a3048;
-    --text: #f8fafc;
-    --muted: #94a3b8;
-    --green: #22c55e;
-    --green-dark: #15803d;
-    --green-soft: rgba(34,197,94,.10);
-    --blue: #38bdf8;
-}
+    <style>
+    .stApp {
+        background:
+            radial-gradient(
+                circle at 90% 0%,
+                rgba(34,197,94,.08),
+                transparent 28%
+            ),
+            #07111f;
+    }
 
-.stApp {
-    direction: rtl;
-    background:
-        radial-gradient(
-            circle at 88% 0%,
-            rgba(34,197,94,.10),
-            transparent 27%
-        ),
-        radial-gradient(
-            circle at 4% 18%,
-            rgba(56,189,248,.07),
-            transparent 25%
-        ),
-        var(--bg);
-    color: var(--text);
-}
-
-.block-container {
-    max-width: 1180px;
-    padding: 28px 22px 60px;
-}
-
-.hero {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 18px;
-    padding: 26px 30px;
-    margin-bottom: 18px;
-    border: 1px solid var(--border);
-    border-radius: 22px;
-    background:
-        linear-gradient(
-            135deg,
-            rgba(16,34,56,.98),
-            rgba(8,22,37,.98)
-        );
-    box-shadow: 0 20px 60px rgba(0,0,0,.25);
-}
-
-.hero-title {
-    margin: 0;
-    font-size: clamp(25px, 4vw, 38px);
-    font-weight: 850;
-    letter-spacing: -.7px;
-}
-
-.hero-subtitle {
-    margin-top: 7px;
-    color: var(--muted);
-    font-size: 14px;
-}
-
-.hero-status {
-    padding: 9px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(34,197,94,.35);
-    background: var(--green-soft);
-    color: #86efac;
-    white-space: nowrap;
-    font-size: 13px;
-}
-
-.section {
-    background: rgba(13,27,42,.94);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 21px;
-    margin: 15px 0;
-    box-shadow: 0 10px 35px rgba(0,0,0,.10);
-}
-
-.section-title {
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 4px;
-}
-
-.section-subtitle {
-    color: var(--muted);
-    font-size: 13px;
-    margin-bottom: 17px;
-    line-height: 1.7;
-}
-
-.search-label {
-    color: #cbd5e1;
-    font-size: 13px;
-    margin-bottom: 7px;
-}
-
-div[data-testid="stTextInput"] input {
-    direction: ltr !important;
-    text-align: left !important;
-    background: #081525 !important;
-    border: 1px solid #29425e !important;
-    color: #fff !important;
-    border-radius: 13px !important;
-    min-height: 50px;
-    font-size: 17px;
-}
-
-div[data-testid="stTextInput"] input:focus {
-    border-color: #22c55e !important;
-    box-shadow: 0 0 0 2px rgba(34,197,94,.12) !important;
-}
-
-.product-card {
-    background:
-        linear-gradient(
-            145deg,
-            #102238,
-            #0a1828
-        );
-    border: 1px solid #24415e;
-    border-radius: 20px;
-    padding: 23px;
-    margin-top: 18px;
-}
-
-.product-name {
-    font-size: 25px;
-    line-height: 1.4;
-    font-weight: 850;
-}
-
-.product-found {
-    display: inline-block;
-    margin-top: 12px;
-    padding: 7px 11px;
-    border-radius: 9px;
-    background: rgba(34,197,94,.10);
-    border: 1px solid rgba(34,197,94,.28);
-    color: #bbf7d0;
-    font-size: 13px;
-}
-
-.stat-card {
-    background: #081525;
-    border: 1px solid #1e3851;
-    border-radius: 15px;
-    padding: 16px 13px;
-    text-align: center;
-    min-height: 90px;
-}
-
-.stat-value {
-    color: #fff;
-    font-size: 20px;
-    font-weight: 850;
-    overflow-wrap: anywhere;
-}
-
-.stat-label {
-    color: var(--muted);
-    font-size: 12px;
-    margin-top: 7px;
-}
-
-.tip {
-    background: #081525;
-    border: 1px solid #1c344c;
-    border-radius: 14px;
-    padding: 14px 16px;
-    color: #cbd5e1;
-    font-size: 13px;
-    line-height: 1.9;
-}
-
-div[data-testid="stTabs"] button {
-    font-weight: 750;
-}
-
-button[kind="primary"] {
-    background: linear-gradient(
-        135deg,
-        #22c55e,
-        #15803d
-    ) !important;
-    border: none !important;
-}
-
-@media (max-width: 700px) {
     .block-container {
-        padding: 16px 11px 45px;
+        max-width: 1180px;
+        padding-top: 2rem;
+        padding-bottom: 4rem;
     }
 
-    .hero {
-        padding: 20px;
-        border-radius: 18px;
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-color: #20344d !important;
+        border-radius: 18px !important;
+        background: rgba(13,27,42,.72) !important;
     }
 
-    .hero-status {
-        display: none;
-    }
-
-    .section {
+    div[data-testid="stMetric"] {
+        background: #091829;
+        border: 1px solid #1e3851;
         padding: 15px;
-        border-radius: 16px;
+        border-radius: 14px;
     }
-}
-</style>
-""",
+
+    div[data-testid="stMetricLabel"] {
+        color: #94a3b8 !important;
+    }
+
+    div[data-testid="stMetricValue"] {
+        font-size: 1.25rem !important;
+    }
+
+    div[data-testid="stTextInput"] input {
+        direction: ltr !important;
+        text-align: left !important;
+        min-height: 48px;
+        border-radius: 12px;
+        background: #081525;
+        border-color: #29425e;
+    }
+
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #22c55e;
+        box-shadow: 0 0 0 1px #22c55e;
+    }
+
+    button[kind="primary"] {
+        border-radius: 11px !important;
+    }
+
+    div[data-testid="stTabs"] button {
+        font-weight: 750;
+    }
+
+    .small-muted {
+        color: #94a3b8;
+        font-size: .88rem;
+    }
+
+    .success-line {
+        color: #86efac;
+        font-weight: 700;
+    }
+
+    @media (max-width: 700px) {
+        .block-container {
+            padding-left: .75rem;
+            padding-right: .75rem;
+            padding-top: 1rem;
+        }
+    }
+    </style>
+    """,
     unsafe_allow_html=True,
-)
-
-
-# ============================================================
-# BROWSER BARCODE SCANNER - STREAMLIT V2 COMPONENT
-#
-# This is deliberately browser-side.
-# The camera stream does NOT travel through Python.
-# html5-qrcode 2.3.8:
-#   - camera scanning
-#   - BarcodeDetector when supported
-#   - ZXing fallback
-#   - image-file scanning
-#   - camera selection
-#   - torch/zoom where supported
-# ============================================================
-
-SCANNER_HTML = """
-<div id="hb-root">
-    <div class="hb-head">
-        <div>
-            <div class="hb-title">📷 ماسح الباركود</div>
-            <div class="hb-subtitle">
-                قراءة مباشرة من كاميرا الجهاز
-            </div>
-        </div>
-        <div id="hb-status" class="hb-status">
-            جاهز
-        </div>
-    </div>
-
-    <div id="hb-reader"></div>
-
-    <div class="hb-controls">
-        <button id="hb-start" class="hb-primary">
-            تشغيل الكاميرا
-        </button>
-
-        <button id="hb-stop" class="hb-secondary" disabled>
-            إيقاف
-        </button>
-
-        <button id="hb-file" class="hb-secondary">
-            📁 قراءة صورة
-        </button>
-
-        <input
-            id="hb-file-input"
-            type="file"
-            accept="image/*"
-            hidden
-        />
-    </div>
-
-    <div class="hb-help">
-        <b>أفضل نتيجة:</b>
-        استخدم الكاميرا الخلفية، اقترب من الملصق،
-        واجعل الخطوط داخل الإطار الأخضر واضحة.
-    </div>
-
-    <div id="hb-result" class="hb-result">
-        <div class="hb-result-label">
-            تم التعرف على الباركود
-        </div>
-        <div id="hb-result-value" class="hb-result-value"></div>
-    </div>
-
-    <div id="hb-error" class="hb-error"></div>
-</div>
-"""
-
-SCANNER_CSS = """
-#hb-root {
-    direction: rtl;
-    color: #e5e7eb;
-    font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-}
-
-.hb-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.hb-title {
-    font-size: 19px;
-    font-weight: 850;
-}
-
-.hb-subtitle {
-    color: #94a3b8;
-    font-size: 12px;
-    margin-top: 3px;
-}
-
-.hb-status {
-    color: #94a3b8;
-    background: #081525;
-    border: 1px solid #20344d;
-    border-radius: 999px;
-    padding: 7px 11px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-#hb-reader {
-    width: 100%;
-    min-height: 290px;
-    overflow: hidden;
-    border-radius: 17px;
-    background: #020617;
-    border: 1px solid #20344d;
-}
-
-#hb-reader video {
-    width: 100% !important;
-    border-radius: 16px !important;
-    object-fit: cover !important;
-}
-
-#hb-reader canvas {
-    display: none;
-}
-
-.hb-controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    margin-top: 11px;
-}
-
-.hb-controls button {
-    min-height: 45px;
-    border-radius: 11px;
-    border: 1px solid #29425e;
-    color: #e5e7eb;
-    background: #0b1a2b;
-    font-weight: 750;
-    cursor: pointer;
-}
-
-.hb-controls button:disabled {
-    opacity: .45;
-    cursor: not-allowed;
-}
-
-.hb-primary {
-    background: linear-gradient(
-        135deg,
-        #22c55e,
-        #15803d
-    ) !important;
-    border: none !important;
-    color: white !important;
-}
-
-.hb-help {
-    margin-top: 11px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: #081525;
-    border: 1px solid #1c344c;
-    color: #94a3b8;
-    font-size: 12px;
-    line-height: 1.8;
-    text-align: center;
-}
-
-.hb-result {
-    display: none;
-    margin-top: 12px;
-    padding: 14px;
-    border-radius: 13px;
-    background: rgba(34,197,94,.09);
-    border: 1px solid rgba(34,197,94,.35);
-    text-align: center;
-}
-
-.hb-result.show {
-    display: block;
-}
-
-.hb-result-label {
-    color: #86efac;
-    font-size: 12px;
-}
-
-.hb-result-value {
-    color: #fff;
-    font-size: 27px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    margin-top: 4px;
-    direction: ltr;
-    word-break: break-all;
-}
-
-.hb-error {
-    display: none;
-    margin-top: 11px;
-    padding: 11px;
-    border-radius: 12px;
-    color: #fecaca;
-    background: rgba(239,68,68,.08);
-    border: 1px solid rgba(239,68,68,.25);
-    font-size: 12px;
-    line-height: 1.7;
-}
-
-.hb-error.show {
-    display: block;
-}
-
-@media (max-width: 600px) {
-    .hb-controls {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .hb-controls button:last-of-type {
-        grid-column: 1 / -1;
-    }
-}
-"""
-
-SCANNER_JS = r"""
-export default function(component) {
-    const { setTriggerValue, parentElement } = component;
-
-    const root = parentElement.querySelector("#hb-root");
-    if (!root) return;
-
-    const reader = parentElement.querySelector("#hb-reader");
-    const startBtn = parentElement.querySelector("#hb-start");
-    const stopBtn = parentElement.querySelector("#hb-stop");
-    const fileBtn = parentElement.querySelector("#hb-file");
-    const fileInput = parentElement.querySelector("#hb-file-input");
-    const status = parentElement.querySelector("#hb-status");
-    const resultBox = parentElement.querySelector("#hb-result");
-    const resultValue = parentElement.querySelector("#hb-result-value");
-    const errorBox = parentElement.querySelector("#hb-error");
-
-    let scanner = null;
-    let scanning = false;
-    let reported = false;
-    let cameras = [];
-    let activeCameraId = null;
-
-    const formats = [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.ITF,
-        Html5QrcodeSupportedFormats.CODABAR
-    ];
-
-    function setStatus(text) {
-        status.textContent = text;
-    }
-
-    function clearError() {
-        errorBox.textContent = "";
-        errorBox.classList.remove("show");
-    }
-
-    function showError(text) {
-        errorBox.textContent = text;
-        errorBox.classList.add("show");
-        setStatus("خطأ");
-    }
-
-    function clean(value) {
-        return String(value || "")
-            .trim()
-            .replace(/\s+/g, "");
-    }
-
-    function isPlausible(value) {
-        if (!value) return false;
-
-        // Retail EAN / UPC.
-        if (/^\d+$/.test(value)) {
-            return [8, 12, 13, 14].includes(value.length);
-        }
-
-        // Warehouse / Code128 / Code39.
-        return value.length >= 4;
-    }
-
-    async function loadLibrary() {
-        if (window.Html5Qrcode) {
-            return;
-        }
-
-        await new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            script.src =
-                "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
-    async function ensureScanner() {
-        if (!scanner) {
-            scanner = new Html5Qrcode(
-                reader.id,
-                {
-                    formatsToSupport: formats,
-                    useBarCodeDetectorIfSupported: true,
-                    verbose: false
-                }
-            );
-        }
-        return scanner;
-    }
-
-    function qrBox(width, height) {
-        const boxWidth = Math.floor(width * 0.90);
-        const boxHeight = Math.max(
-            115,
-            Math.min(
-                Math.floor(height * 0.32),
-                255
-            )
-        );
-
-        return {
-            width: boxWidth,
-            height: boxHeight
-        };
-    }
-
-    async function chooseBestCamera() {
-        cameras = await Html5Qrcode.getCameras();
-
-        if (!cameras || cameras.length === 0) {
-            throw new Error("لم يتم العثور على كاميرا.");
-        }
-
-        const backWords = [
-            "back",
-            "rear",
-            "environment",
-            "خلف",
-            "خلفية"
-        ];
-
-        let best = cameras.find(camera => {
-            const label =
-                (camera.label || "").toLowerCase();
-
-            return backWords.some(word =>
-                label.includes(word)
-            );
-        });
-
-        return best || cameras[cameras.length - 1];
-    }
-
-    async function applyCameraEnhancements() {
-        try {
-            if (!scanner || !scanning) return;
-
-            const capabilities =
-                scanner.getRunningTrackCapabilities();
-
-            const constraints = {};
-
-            if (
-                capabilities &&
-                capabilities.focusMode &&
-                capabilities.focusMode.includes("continuous")
-            ) {
-                constraints.focusMode = "continuous";
-            }
-
-            if (
-                capabilities &&
-                capabilities.zoom
-            ) {
-                const min =
-                    capabilities.zoom.min ?? 1;
-                const max =
-                    capabilities.zoom.max ?? 1;
-
-                if (max > min) {
-                    constraints.zoom =
-                        Math.min(
-                            max,
-                            Math.max(
-                                min,
-                                min + (max - min) * 0.30
-                            )
-                        );
-                }
-            }
-
-            if (Object.keys(constraints).length) {
-                await scanner.applyVideoConstraints(
-                    { advanced: [constraints] }
-                );
-            }
-        } catch (e) {
-            // Camera-specific controls are optional.
-        }
-    }
-
-    async function stopScanner() {
-        if (!scanner || !scanning) {
-            return;
-        }
-
-        try {
-            await scanner.stop();
-        } catch (e) {
-            // Already stopped.
-        }
-
-        scanning = false;
-        startBtn.disabled = false;
-        stopBtn.disabled = true;
-        setStatus("جاهز");
-    }
-
-    async function onSuccess(decodedText) {
-        if (reported) return;
-
-        const value = clean(decodedText);
-
-        if (!isPlausible(value)) {
-            return;
-        }
-
-        reported = true;
-
-        resultValue.textContent = value;
-        resultBox.classList.add("show");
-
-        setStatus("تمت القراءة");
-
-        await stopScanner();
-
-        // Trigger exactly one Streamlit rerun.
-        setTriggerValue("barcode", value);
-    }
-
-    async function startScanner() {
-        clearError();
-
-        if (scanning) return;
-
-        reported = false;
-        resultBox.classList.remove("show");
-        resultValue.textContent = "";
-
-        try {
-            setStatus("تحميل محرك القراءة…");
-
-            await loadLibrary();
-
-            const qr = await ensureScanner();
-
-            const camera = await chooseBestCamera();
-
-            activeCameraId = camera.id;
-
-            setStatus("تشغيل الكاميرا…");
-
-            await qr.start(
-                activeCameraId,
-                {
-                    fps: 12,
-                    aspectRatio: 16 / 9,
-                    qrbox: qrBox,
-                    disableFlip: true
-                },
-                onSuccess,
-                function() {
-                    // A failed frame is normal. Do not show errors.
-                }
-            );
-
-            scanning = true;
-
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-
-            setStatus("وجّه الباركود إلى الإطار");
-
-            setTimeout(
-                applyCameraEnhancements,
-                800
-            );
-
-        } catch (error) {
-            console.error(error);
-
-            scanning = false;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-
-            const message =
-                String(error || "");
-
-            if (
-                message
-                    .toLowerCase()
-                    .includes("permission")
-            ) {
-                showError(
-                    "صلاحية الكاميرا مرفوضة. اسمح للموقع باستخدام الكاميرا ثم اضغط تشغيل الكاميرا مرة أخرى."
-                );
-            } else if (
-                message
-                    .toLowerCase()
-                    .includes("secure")
-            ) {
-                showError(
-                    "الكاميرا تحتاج إلى HTTPS."
-                );
-            } else {
-                showError(
-                    "تعذر تشغيل الكاميرا. تأكد من وجود كاميرا ومنح المتصفح صلاحية استخدامها."
-                );
-            }
-        }
-    }
-
-    async function scanFile(file) {
-        if (!file) return;
-
-        clearError();
-        reported = false;
-
-        try {
-            await loadLibrary();
-
-            const qr = await ensureScanner();
-
-            setStatus("تحليل الصورة…");
-
-            const value =
-                await qr.scanFile(file, false);
-
-            await onSuccess(value);
-
-        } catch (error) {
-            console.error(error);
-
-            showError(
-                "لم يتم العثور على باركود واضح في الصورة. صوّر الباركود من مسافة قريبة وبإضاءة جيدة."
-            );
-        }
-    }
-
-    startBtn.onclick = startScanner;
-    stopBtn.onclick = stopScanner;
-
-    fileBtn.onclick = function() {
-        fileInput.click();
-    };
-
-    fileInput.onchange = function(event) {
-        const file =
-            event.target.files &&
-            event.target.files[0];
-
-        if (file) {
-            scanFile(file);
-        }
-
-        fileInput.value = "";
-    };
-
-    // Load the library before the user presses the button,
-    // but do NOT request camera permission automatically.
-    loadLibrary()
-        .then(() => setStatus("جاهز"))
-        .catch(() =>
-            showError(
-                "تعذر تحميل محرك قراءة الباركود. تحقق من اتصال الإنترنت."
-            )
-        );
-
-    // Component cleanup.
-    return () => {
-        try {
-            if (scanner && scanning) {
-                scanner.stop().catch(() => {});
-            }
-        } catch (e) {}
-    };
-}
-"""
-
-# ============================================================
-# REGISTER COMPONENT V2
-# ============================================================
-
-barcode_component = components.component(
-    "holland_bazar_barcode_scanner",
-    html=SCANNER_HTML,
-    css=SCANNER_CSS,
-    js=SCANNER_JS,
 )
 
 
@@ -913,16 +166,25 @@ def load_data():
 df = load_data()
 
 if df is None:
-    st.error("ملف DATABASE.xlsx غير موجود.")
+    st.error("ملف DATABASE.xlsx غير موجود في المشروع.")
     st.stop()
 
 if df.empty:
-    st.error("ملف DATABASE.xlsx فارغ.")
+    st.error("ملف DATABASE.xlsx موجود لكنه فارغ.")
+    st.stop()
+
+required_columns = {"0", "1", "2", "3"}
+
+if not required_columns.issubset(df.columns):
+    st.error(
+        "DATABASE.xlsx يجب أن يحتوي على الأعمدة الأربعة الأولى: "
+        "0 = الكود، 1 = الباركود، 2 = الوصف، 3 = الكمية."
+    )
     st.stop()
 
 
 # ============================================================
-# MEGA IMAGE SUPPORT
+# MEGA PUBLIC-FOLDER READER
 # ============================================================
 
 def mega_b64_decode(value):
@@ -950,10 +212,7 @@ def a32_to_bytes(values):
     )
 
 
-def decrypt_key(
-    encrypted_key,
-    key,
-):
+def decrypt_key(encrypted_key, key):
     cipher = AES.new(
         a32_to_bytes(key),
         AES.MODE_ECB,
@@ -969,10 +228,7 @@ def decrypt_key(
     )
 
 
-def decrypt_attributes(
-    encrypted_attributes,
-    key,
-):
+def decrypt_attributes(encrypted_attributes, key):
     encrypted = mega_b64_decode(
         encrypted_attributes
     )
@@ -1004,20 +260,12 @@ def parse_mega_folder_url(url):
     )
 
     if not match:
-        raise ValueError(
-            "Invalid MEGA folder URL"
-        )
+        raise ValueError("Invalid MEGA folder URL")
 
-    return (
-        match.group(1),
-        match.group(2),
-    )
+    return match.group(1), match.group(2)
 
 
-def mega_api_request(
-    data,
-    folder_handle=None,
-):
+def mega_api_request(data, folder_handle=None):
     params = {"id": 0}
 
     if folder_handle:
@@ -1035,9 +283,7 @@ def mega_api_request(
     result = response.json()
 
     if not result:
-        raise RuntimeError(
-            "MEGA returned no data."
-        )
+        raise RuntimeError("MEGA returned no data.")
 
     if isinstance(result[0], int):
         raise RuntimeError(
@@ -1047,16 +293,10 @@ def mega_api_request(
     return result[0]
 
 
-@st.cache_data(
-    ttl=3600,
-    show_spinner=False,
-)
+@st.cache_data(ttl=3600, show_spinner=False)
 def get_mega_nodes():
-
     folder_handle, folder_key_text = (
-        parse_mega_folder_url(
-            MEGA_FOLDER_URL
-        )
+        parse_mega_folder_url(MEGA_FOLDER_URL)
     )
 
     shared_key = base64_to_a32(
@@ -1075,11 +315,7 @@ def get_mega_nodes():
 
     output = []
 
-    for node in response.get(
-        "f",
-        [],
-    ):
-
+    for node in response.get("f", []):
         if node.get("t") != 0:
             continue
 
@@ -1095,13 +331,9 @@ def get_mega_nodes():
             continue
 
         try:
-
             if ":" in encrypted_node_key:
                 encrypted_node_key = (
-                    encrypted_node_key.split(
-                        ":",
-                        1,
-                    )[1]
+                    encrypted_node_key.split(":", 1)[1]
                 )
 
             encrypted_key = base64_to_a32(
@@ -1128,13 +360,9 @@ def get_mega_nodes():
                 file_key,
             )
 
-            filename = attributes.get(
-                "n",
-                "",
-            )
+            filename = attributes.get("n", "")
 
             if filename:
-
                 output.append(
                     {
                         "handle": node_handle,
@@ -1149,30 +377,14 @@ def get_mega_nodes():
     return output
 
 
-def find_mega_image(
-    nodes,
-    code,
-    barcode,
-):
-
+def find_mega_image(nodes, code, barcode):
     identifiers = []
 
-    for value in (
-        barcode,
-        code,
-    ):
+    for value in (barcode, code):
+        value = str(value or "").strip().lower()
 
-        value = str(
-            value or ""
-        ).strip().lower()
-
-        if (
-            value
-            and value != "nan"
-        ):
-            identifiers.append(
-                value
-            )
+        if value and value != "nan":
+            identifiers.append(value)
 
     extensions = (
         ".png",
@@ -1185,16 +397,12 @@ def find_mega_image(
     files = [
         node
         for node in nodes
-        if node["name"]
-        .lower()
-        .endswith(extensions)
+        if node["name"].lower().endswith(extensions)
     ]
 
-    # Exact match first.
+    # Exact filename match.
     for identifier in identifiers:
-
         for node in files:
-
             stem = os.path.splitext(
                 node["name"]
             )[0].lower()
@@ -1202,11 +410,9 @@ def find_mega_image(
             if stem == identifier:
                 return node
 
-    # Partial match second.
+    # Partial filename match.
     for identifier in identifiers:
-
         for node in files:
-
             stem = os.path.splitext(
                 node["name"]
             )[0].lower()
@@ -1217,19 +423,10 @@ def find_mega_image(
     return None
 
 
-@st.cache_data(
-    ttl=3600,
-    show_spinner=False,
-)
-def download_mega_image(
-    node_handle,
-    node_key,
-):
-
-    folder_handle, _ = (
-        parse_mega_folder_url(
-            MEGA_FOLDER_URL
-        )
+@st.cache_data(ttl=3600, show_spinner=False)
+def download_mega_image(node_handle, node_key):
+    folder_handle, _ = parse_mega_folder_url(
+        MEGA_FOLDER_URL
     )
 
     response = mega_api_request(
@@ -1291,7 +488,6 @@ def download_mega_image(
     for chunk in response.iter_content(
         1024 * 1024
     ):
-
         if chunk:
             result.write(
                 cipher.decrypt(chunk)
@@ -1301,391 +497,1028 @@ def download_mega_image(
 
 
 # ============================================================
-# PRODUCT LOOKUP
+# BARCODE SCANNER
+#
+# The previous scanner crashed because it referenced
+# Html5QrcodeSupportedFormats BEFORE the external html5-qrcode
+# script had finished loading.
+#
+# This version waits for the library to load, then reads the
+# supported-format constants from window.Html5QrcodeSupportedFormats.
 # ============================================================
 
-def lookup_product(query):
+SCANNER_HTML = """
+<div class="scanner-shell">
+    <div class="scanner-top">
+        <div>
+            <div class="scanner-title">📷 ماسح الباركود</div>
+            <div class="scanner-caption">
+                وجّه الكاميرا إلى الباركود
+            </div>
+        </div>
+        <div id="scanner-status" class="scanner-status">
+            جاهز
+        </div>
+    </div>
 
+    <div id="scanner-reader"></div>
+
+    <div class="scanner-actions">
+        <button id="scanner-start" class="scanner-primary">
+            تشغيل الكاميرا
+        </button>
+
+        <button id="scanner-stop" class="scanner-secondary" disabled>
+            إيقاف
+        </button>
+
+        <button id="scanner-file" class="scanner-secondary">
+            قراءة صورة
+        </button>
+
+        <input
+            id="scanner-file-input"
+            type="file"
+            accept="image/*"
+            hidden
+        />
+    </div>
+
+    <div class="scanner-instructions">
+        <b>نصيحة:</b>
+        استخدم الكاميرا الخلفية، قرّب الهاتف من الباركود،
+        وتأكد أن جميع الخطوط ظاهرة بوضوح.
+    </div>
+
+    <div id="scanner-result" class="scanner-result">
+        <div class="scanner-result-label">
+            الباركود المقروء
+        </div>
+        <div id="scanner-value"></div>
+    </div>
+
+    <div id="scanner-error" class="scanner-error"></div>
+</div>
+"""
+
+SCANNER_CSS = """
+.scanner-shell {
+    width: 100%;
+    box-sizing: border-box;
+    direction: rtl;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--st-text-color, #f8fafc);
+}
+
+.scanner-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.scanner-title {
+    font-size: 19px;
+    font-weight: 850;
+}
+
+.scanner-caption {
+    color: var(--st-secondary-text-color, #94a3b8);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.scanner-status {
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(34,197,94,.08);
+    border: 1px solid rgba(34,197,94,.25);
+    color: #86efac;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+#scanner-reader {
+    width: 100%;
+    min-height: 285px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #020617;
+    border: 1px solid #20344d;
+}
+
+#scanner-reader video {
+    width: 100% !important;
+    max-height: 520px !important;
+    object-fit: cover !important;
+    border-radius: 15px !important;
+}
+
+#scanner-reader img {
+    max-width: 100%;
+}
+
+.scanner-actions {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.scanner-actions button {
+    min-height: 44px;
+    border-radius: 11px;
+    border: 1px solid #29425e;
+    background: #0b1a2b;
+    color: #e5e7eb;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.scanner-actions button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.scanner-primary {
+    background: linear-gradient(
+        135deg,
+        #22c55e,
+        #15803d
+    ) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.scanner-instructions {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #081525;
+    border: 1px solid #1c344c;
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+}
+
+.scanner-result {
+    display: none;
+    margin-top: 11px;
+    padding: 14px;
+    border-radius: 13px;
+    background: rgba(34,197,94,.08);
+    border: 1px solid rgba(34,197,94,.30);
+    text-align: center;
+}
+
+.scanner-result.visible {
+    display: block;
+}
+
+.scanner-result-label {
+    color: #86efac;
+    font-size: 12px;
+}
+
+#scanner-value {
+    margin-top: 4px;
+    color: white;
+    font-size: 25px;
+    font-weight: 900;
+    direction: ltr;
+    word-break: break-all;
+}
+
+.scanner-error {
+    display: none;
+    margin-top: 10px;
+    padding: 11px;
+    border-radius: 11px;
+    background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.25);
+    color: #fecaca;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.scanner-error.visible {
+    display: block;
+}
+
+@media (max-width: 650px) {
+    .scanner-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .scanner-primary {
+        grid-column: 1 / -1;
+    }
+}
+"""
+
+SCANNER_JS = r"""
+export default function(component) {
+    const {
+        parentElement,
+        setTriggerValue,
+    } = component;
+
+    const root =
+        parentElement.querySelector(".scanner-shell");
+
+    if (!root) {
+        return;
+    }
+
+    const reader =
+        parentElement.querySelector("#scanner-reader");
+
+    const startButton =
+        parentElement.querySelector("#scanner-start");
+
+    const stopButton =
+        parentElement.querySelector("#scanner-stop");
+
+    const fileButton =
+        parentElement.querySelector("#scanner-file");
+
+    const fileInput =
+        parentElement.querySelector("#scanner-file-input");
+
+    const status =
+        parentElement.querySelector("#scanner-status");
+
+    const resultBox =
+        parentElement.querySelector("#scanner-result");
+
+    const resultValue =
+        parentElement.querySelector("#scanner-value");
+
+    const errorBox =
+        parentElement.querySelector("#scanner-error");
+
+    let scanner = null;
+    let running = false;
+    let reported = false;
+
+    function setStatus(value) {
+        status.textContent = value;
+    }
+
+    function clearError() {
+        errorBox.textContent = "";
+        errorBox.classList.remove("visible");
+    }
+
+    function showError(value) {
+        errorBox.textContent = value;
+        errorBox.classList.add("visible");
+        setStatus("تعذر التشغيل");
+    }
+
+    function cleanValue(value) {
+        return String(value || "")
+            .trim()
+            .replace(/\s+/g, "");
+    }
+
+    function plausibleBarcode(value) {
+        if (!value) {
+            return false;
+        }
+
+        if (/^\d+$/.test(value)) {
+            return (
+                value.length === 8 ||
+                value.length === 12 ||
+                value.length === 13 ||
+                value.length === 14
+            );
+        }
+
+        return value.length >= 4;
+    }
+
+    function loadHtml5QrCode() {
+        if (
+            window.Html5Qrcode &&
+            window.Html5QrcodeSupportedFormats
+        ) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+            const existing =
+                document.querySelector(
+                    'script[data-holland-h5qr="1"]'
+                );
+
+            if (existing) {
+                const timer = setInterval(() => {
+                    if (
+                        window.Html5Qrcode &&
+                        window.Html5QrcodeSupportedFormats
+                    ) {
+                        clearInterval(timer);
+                        resolve();
+                    }
+                }, 50);
+
+                setTimeout(() => {
+                    clearInterval(timer);
+
+                    if (
+                        window.Html5Qrcode &&
+                        window.Html5QrcodeSupportedFormats
+                    ) {
+                        resolve();
+                    } else {
+                        reject(
+                            new Error(
+                                "Barcode library timeout"
+                            )
+                        );
+                    }
+                }, 15000);
+
+                return;
+            }
+
+            const script =
+                document.createElement("script");
+
+            script.src =
+                "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+
+            script.async = true;
+
+            script.dataset.hollandH5qr = "1";
+
+            script.onload = () => {
+                if (
+                    window.Html5Qrcode &&
+                    window.Html5QrcodeSupportedFormats
+                ) {
+                    resolve();
+                } else {
+                    reject(
+                        new Error(
+                            "Barcode library loaded without API"
+                        )
+                    );
+                }
+            };
+
+            script.onerror = () => {
+                reject(
+                    new Error(
+                        "Could not load barcode library"
+                    )
+                );
+            };
+
+            document.head.appendChild(script);
+        });
+    }
+
+    function supportedFormats() {
+        const F =
+            window.Html5QrcodeSupportedFormats;
+
+        // IMPORTANT:
+        // Read this ONLY after loadHtml5QrCode() completes.
+        return [
+            F.EAN_13,
+            F.EAN_8,
+            F.UPC_A,
+            F.UPC_E,
+            F.CODE_128,
+            F.CODE_39,
+            F.CODE_93,
+            F.ITF,
+            F.CODABAR,
+        ].filter(
+            value =>
+                value !== undefined &&
+                value !== null
+        );
+    }
+
+    function scanBox(width, height) {
+        const boxWidth =
+            Math.floor(width * 0.90);
+
+        const boxHeight =
+            Math.max(
+                110,
+                Math.min(
+                    Math.floor(height * 0.28),
+                    220
+                )
+            );
+
+        return {
+            width: boxWidth,
+            height: boxHeight,
+        };
+    }
+
+    async function stop() {
+        if (!scanner || !running) {
+            return;
+        }
+
+        try {
+            await scanner.stop();
+        } catch (e) {
+            // Already stopped.
+        }
+
+        running = false;
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        setStatus("جاهز");
+    }
+
+    async function success(decodedText) {
+        if (reported) {
+            return;
+        }
+
+        const value =
+            cleanValue(decodedText);
+
+        if (!plausibleBarcode(value)) {
+            return;
+        }
+
+        reported = true;
+
+        resultValue.textContent = value;
+        resultBox.classList.add("visible");
+
+        setStatus("تمت القراءة");
+
+        await stop();
+
+        // One event -> one Streamlit rerun.
+        setTriggerValue(
+            "barcode",
+            value
+        );
+    }
+
+    async function start() {
+        if (running) {
+            return;
+        }
+
+        clearError();
+
+        resultBox.classList.remove(
+            "visible"
+        );
+
+        resultValue.textContent = "";
+
+        reported = false;
+
+        try {
+            setStatus(
+                "جاري تحميل القارئ..."
+            );
+
+            // FIX FOR THE PREVIOUS ERROR:
+            // We wait for the script BEFORE accessing
+            // Html5QrcodeSupportedFormats.
+            await loadHtml5QrCode();
+
+            const formats =
+                supportedFormats();
+
+            scanner =
+                new window.Html5Qrcode(
+                    reader.id,
+                    {
+                        formatsToSupport:
+                            formats,
+                        useBarCodeDetectorIfSupported:
+                            true,
+                        verbose: false,
+                    }
+                );
+
+            setStatus(
+                "جاري العثور على الكاميرا..."
+            );
+
+            const cameras =
+                await window.Html5Qrcode.getCameras();
+
+            if (
+                !cameras ||
+                cameras.length === 0
+            ) {
+                throw new Error(
+                    "No camera found"
+                );
+            }
+
+            // Prefer rear/environment camera.
+            const preferred =
+                cameras.find(
+                    camera => {
+                        const label =
+                            (
+                                camera.label ||
+                                ""
+                            ).toLowerCase();
+
+                        return (
+                            label.includes("back") ||
+                            label.includes("rear") ||
+                            label.includes("environment") ||
+                            label.includes("خلف")
+                        );
+                    }
+                ) ||
+                cameras[cameras.length - 1];
+
+            setStatus(
+                "وجّه الباركود إلى الإطار"
+            );
+
+            await scanner.start(
+                preferred.id,
+                {
+                    fps: 12,
+                    aspectRatio: 1.7777778,
+                    qrbox: scanBox,
+                    disableFlip: true,
+                },
+                success,
+                function() {
+                    // Normal frame misses are ignored.
+                }
+            );
+
+            running = true;
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            setStatus(
+                "امسح الباركود الآن"
+            );
+
+            // Give the browser a moment to expose
+            // the active camera track.
+            setTimeout(
+                async () => {
+                    try {
+                        const capabilities =
+                            scanner.getRunningTrackCapabilities();
+
+                        const advanced = {};
+
+                        if (
+                            capabilities &&
+                            capabilities.focusMode &&
+                            capabilities.focusMode.includes(
+                                "continuous"
+                            )
+                        ) {
+                            advanced.focusMode =
+                                "continuous";
+                        }
+
+                        if (
+                            capabilities &&
+                            capabilities.zoom &&
+                            capabilities.zoom.max >
+                                capabilities.zoom.min
+                        ) {
+                            advanced.zoom =
+                                Math.min(
+                                    capabilities.zoom.max,
+                                    Math.max(
+                                        capabilities.zoom.min,
+                                        capabilities.zoom.min +
+                                        (
+                                            capabilities.zoom.max -
+                                            capabilities.zoom.min
+                                        ) * 0.25
+                                    )
+                                );
+                        }
+
+                        if (
+                            Object.keys(
+                                advanced
+                            ).length
+                        ) {
+                            await scanner.applyVideoConstraints(
+                                {
+                                    advanced: [
+                                        advanced
+                                    ]
+                                }
+                            );
+                        }
+                    } catch (e) {
+                        // Focus/zoom is optional.
+                    }
+                },
+                800
+            );
+
+        } catch (error) {
+            console.error(
+                "Holland Bazar scanner:",
+                error
+            );
+
+            await stop();
+
+            const message =
+                String(error || "");
+
+            if (
+                message
+                    .toLowerCase()
+                    .includes("permission")
+            ) {
+                showError(
+                    "صلاحية الكاميرا مرفوضة. اسمح للموقع باستخدام الكاميرا ثم اضغط تشغيل الكاميرا مرة أخرى."
+                );
+            } else if (
+                message
+                    .toLowerCase()
+                    .includes("secure")
+            ) {
+                showError(
+                    "الكاميرا تحتاج إلى اتصال HTTPS."
+                );
+            } else if (
+                message
+                    .toLowerCase()
+                    .includes("no camera")
+            ) {
+                showError(
+                    "لم يتم العثور على كاميرا في هذا الجهاز."
+                );
+            } else if (
+                message
+                    .toLowerCase()
+                    .includes("barcode library")
+            ) {
+                showError(
+                    "تعذر تحميل محرك قراءة الباركود. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة."
+                );
+            } else {
+                showError(
+                    "تعذر تشغيل قارئ الباركود. افتح صلاحيات الكاميرا في المتصفح ثم جرّب مرة أخرى."
+                );
+            }
+        }
+    }
+
+    async function scanFile(file) {
+        if (!file) {
+            return;
+        }
+
+        clearError();
+
+        reported = false;
+
+        try {
+            setStatus(
+                "تحليل الصورة..."
+            );
+
+            await loadHtml5QrCode();
+
+            if (!scanner) {
+                scanner =
+                    new window.Html5Qrcode(
+                        reader.id,
+                        {
+                            formatsToSupport:
+                                supportedFormats(),
+                            useBarCodeDetectorIfSupported:
+                                true,
+                            verbose: false,
+                        }
+                    );
+            }
+
+            const value =
+                await scanner.scanFile(
+                    file,
+                    false
+                );
+
+            await success(value);
+
+        } catch (error) {
+            console.error(error);
+
+            showError(
+                "لم يتم العثور على باركود واضح في الصورة. صوّر الملصق من قريب وبإضاءة جيدة."
+            );
+        }
+    }
+
+    startButton.addEventListener(
+        "click",
+        start
+    );
+
+    stopButton.addEventListener(
+        "click",
+        stop
+    );
+
+    fileButton.addEventListener(
+        "click",
+        () => fileInput.click()
+    );
+
+    fileInput.addEventListener(
+        "change",
+        event => {
+            const file =
+                event.target.files &&
+                event.target.files[0];
+
+            if (file) {
+                scanFile(file);
+            }
+
+            fileInput.value = "";
+        }
+    );
+
+    // Do not request camera permission automatically.
+    loadHtml5QrCode()
+        .then(() => {
+            setStatus("جاهز");
+        })
+        .catch(() => {
+            // The user can still retry through the button.
+            setStatus("جاهز");
+        });
+
+    return () => {
+        try {
+            if (scanner && running) {
+                scanner.stop().catch(
+                    () => {}
+                );
+            }
+        } catch (e) {}
+    };
+}
+"""
+
+barcode_component = components.component(
+    "holland_bazar_barcode_scanner_v2",
+    html=SCANNER_HTML,
+    css=SCANNER_CSS,
+    js=SCANNER_JS,
+)
+
+
+# ============================================================
+# PRODUCT SEARCH
+# ============================================================
+
+def find_product(query):
     query = str(query).strip()
 
     if not query:
         return None
 
-    return df[
+    exact = df[
         (df["0"] == query)
-        |
-        (df["1"] == query)
+        | (df["1"] == query)
     ]
 
+    if exact.empty:
+        return None
 
-def render_product(query):
+    return exact.iloc[0]
 
-    matches = lookup_product(query)
 
-    if matches is None or matches.empty:
+def show_product(row):
+    code = str(row["0"]).strip()
+    barcode = str(row["1"]).strip()
+    description = str(row["2"]).strip()
+    quantity = str(row["3"]).strip()
 
+    if not barcode or barcode.lower() == "nan":
+        barcode = "غير متوفر"
+
+    if not description or description.lower() == "nan":
+        description = "غير متوفر"
+
+    if not quantity or quantity.lower() == "nan":
+        quantity = "0"
+
+    st.success("تم العثور على المنتج")
+
+    with st.container(border=True):
+        st.subheader(description)
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.metric("كود المنتج", code)
+
+        with c2:
+            st.metric("الباركود", barcode)
+
+        with c3:
+            st.metric("الكمية الحالية", quantity)
+
+    with st.container(border=True):
+        st.subheader("🖼️ صورة المنتج")
+
+        try:
+            with st.spinner("جاري تحميل صورة المنتج..."):
+                nodes = get_mega_nodes()
+
+                image_node = find_mega_image(
+                    nodes,
+                    code,
+                    barcode,
+                )
+
+                if image_node is None:
+                    st.info(
+                        "لا توجد صورة مرتبطة بهذا المنتج."
+                    )
+                else:
+                    image_bytes = download_mega_image(
+                        image_node["handle"],
+                        image_node["key"],
+                    )
+
+                    image = Image.open(
+                        BytesIO(image_bytes)
+                    )
+
+                    st.image(
+                        image,
+                        width="stretch",
+                    )
+
+        except Exception as error:
+            st.warning(
+                f"تعذر تحميل صورة المنتج: {error}"
+            )
+
+
+def show_similar(query):
+    similar = df[
+        df["0"].str.contains(
+            query,
+            case=False,
+            na=False,
+            regex=False,
+        )
+        |
+        df["1"].str.contains(
+            query,
+            case=False,
+            na=False,
+            regex=False,
+        )
+    ].head(5)
+
+    if similar.empty:
+        return
+
+    st.subheader("نتائج مشابهة")
+
+    for _, row in similar.iterrows():
+        with st.container(border=True):
+            st.write(
+                f"**{row['2']}**"
+            )
+            st.caption(
+                f"الكود: {row['0']}  •  "
+                f"الباركود: {row['1']}"
+            )
+
+
+def perform_search(query):
+    query = str(query).strip()
+
+    if not query:
+        return
+
+    row = find_product(query)
+
+    if row is None:
         st.error(
             "لم يتم العثور على منتج بهذا الباركود أو الكود."
         )
-
-        similar = df[
-            df["0"].str.contains(
-                query,
-                case=False,
-                na=False,
-                regex=False,
-            )
-            |
-            df["1"].str.contains(
-                query,
-                case=False,
-                na=False,
-                regex=False,
-            )
-        ]
-
-        if not similar.empty:
-
-            st.markdown(
-                """
-                <div class="section">
-                    <div class="section-title">
-                        نتائج مشابهة
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            for _, row in (
-                similar.head(5).iterrows()
-            ):
-
-                with st.container(
-                    border=True
-                ):
-
-                    st.write(
-                        f"**{row['2']}**"
-                    )
-
-                    st.caption(
-                        f"الكود: {row['0']}  •  "
-                        f"الباركود: {row['1']}"
-                    )
-
+        show_similar(query)
         return
 
-    row = matches.iloc[0]
-
-    code = str(
-        row["0"]
-    ).strip()
-
-    barcode = str(
-        row["1"]
-    ).strip()
-
-    description = str(
-        row["2"]
-    ).strip()
-
-    quantity = str(
-        row["3"]
-    ).strip()
-
-    if (
-        not barcode
-        or barcode.lower() == "nan"
-    ):
-        barcode = "غير متوفر"
-
-    if (
-        not description
-        or description.lower() == "nan"
-    ):
-        description = "غير متوفر"
-
-    if (
-        not quantity
-        or quantity.lower() == "nan"
-    ):
-        quantity = "0"
-
-    st.markdown(
-        f"""
-        <div class="product-card">
-
-            <div class="product-name">
-                {description}
-            </div>
-
-            <div class="product-found">
-                ✓ تم العثور على المنتج
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        st.markdown(
-            f"""
-            <div class="stat-card">
-                <div class="stat-value">
-                    {code}
-                </div>
-                <div class="stat-label">
-                    كود المنتج
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with c2:
-        st.markdown(
-            f"""
-            <div class="stat-card">
-                <div class="stat-value">
-                    {barcode}
-                </div>
-                <div class="stat-label">
-                    الباركود
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with c3:
-        st.markdown(
-            f"""
-            <div class="stat-card">
-                <div class="stat-value">
-                    {quantity}
-                </div>
-                <div class="stat-label">
-                    الكمية الحالية
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.markdown(
-        """
-        <div class="section">
-            <div class="section-title">
-                🖼️ صورة المنتج
-            </div>
-            <div class="section-subtitle">
-                الصورة المرتبطة بكود المنتج أو الباركود.
-            </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    try:
-
-        with st.spinner(
-            "جاري تحميل صورة المنتج..."
-        ):
-
-            nodes = get_mega_nodes()
-
-            image_node = find_mega_image(
-                nodes,
-                code,
-                barcode,
-            )
-
-        if image_node is None:
-
-            st.info(
-                "لا توجد صورة مرتبطة بهذا المنتج."
-            )
-
-        else:
-
-            image_bytes = (
-                download_mega_image(
-                    image_node["handle"],
-                    image_node["key"],
-                )
-            )
-
-            image = Image.open(
-                BytesIO(image_bytes)
-            )
-
-            st.image(
-                image,
-                width="stretch",
-            )
-
-    except Exception as e:
-
-        st.warning(
-            f"تعذر تحميل صورة المنتج: {e}"
-        )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    show_product(row)
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="hero">
-
-        <div>
-            <div class="hero-title">
-                Holland Bazar T&D 📦
-            </div>
-
-            <div class="hero-subtitle">
-                نظام البحث عن المنتجات والمخزون
-            </div>
-        </div>
-
-        <div class="hero-status">
-            ● النظام جاهز
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.title("Holland Bazar T&D 📦")
+st.caption(
+    "نظام البحث عن المنتجات والمخزون — نسخة تجريبية"
 )
+
+st.divider()
 
 
 # ============================================================
-# NAVIGATION
+# TABS
 # ============================================================
 
 search_tab, scanner_tab = st.tabs(
     [
-        "🔎 البحث",
+        "🔎 البحث عن منتج",
         "📷 مسح الباركود",
     ]
 )
 
 
 # ============================================================
-# SEARCH
+# MANUAL SEARCH
 # ============================================================
 
 with search_tab:
 
-    st.markdown(
-        """
-        <div class="section">
+    with st.container(border=True):
 
-            <div class="section-title">
-                البحث عن منتج
-            </div>
-
-            <div class="section-subtitle">
-                أدخل الباركود أو كود المنتج للوصول
-                إلى بيانات المخزون والصورة.
-            </div>
-
-        """,
-        unsafe_allow_html=True,
-    )
-
-    query = st.text_input(
-        "الباركود أو كود المنتج",
-        placeholder="مثال: 6820468232713",
-        label_visibility="collapsed",
-        key="manual_search",
-    )
-
-    if query:
-        render_product(query)
-
-    else:
-
-        st.markdown(
-            """
-            <div class="tip">
-                💡 اكتب الباركود أو الكود يدوياً،
-                أو استخدم تبويب <b>مسح الباركود</b>
-                مع كاميرا الهاتف.
-            </div>
-            """,
-            unsafe_allow_html=True,
+        st.subheader("البحث عن منتج")
+        st.caption(
+            "أدخل الباركود أو كود المنتج للعثور على بيانات المخزون."
         )
 
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
+        manual_query = st.text_input(
+            "الباركود أو الكود",
+            placeholder="مثال: 6820468232713",
+            key="manual_query",
+        )
+
+        if manual_query:
+            perform_search(
+                manual_query
+            )
 
 
 # ============================================================
-# SCANNER
+# CAMERA SCANNER
 # ============================================================
 
 with scanner_tab:
 
-    st.markdown(
-        """
-        <div class="section">
+    with st.container(border=True):
 
-            <div class="section-title">
-                ماسح الباركود
-            </div>
+        st.subheader("📷 قارئ الباركود")
+        st.caption(
+            "القارئ يعمل داخل المتصفح مباشرة. "
+            "اضغط تشغيل الكاميرا ثم وجّه الكاميرا إلى الباركود."
+        )
 
-            <div class="section-subtitle">
-                الماسح يعمل داخل متصفح الجهاز مباشرة.
-                لا يتم إرسال فيديو الكاميرا إلى Python.
-            </div>
+        result = barcode_component(
+            key="warehouse_scanner_v2",
+            on_barcode_change=lambda: None,
+        )
 
-        """,
-        unsafe_allow_html=True,
-    )
-
-    scan_result = barcode_component(
-        key="warehouse_barcode_scanner",
-        default={"barcode": None},
-        on_barcode_change=lambda: None,
-    )
-
-    barcode = None
-
-    if scan_result:
+        scanned = None
 
         try:
-            barcode = scan_result.barcode
+            scanned = result.barcode
         except Exception:
-            barcode = None
+            scanned = None
 
-    if barcode:
+        if scanned:
+            st.success(
+                f"تمت قراءة الباركود: {scanned}"
+            )
 
-        st.markdown(
-            f"""
-            <div class="product-found">
-                ✓ تمت قراءة الباركود:
-                <b dir="ltr">{barcode}</b>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        render_product(
-            barcode
-        )
-
-    st.markdown(
-        "</div>",
-        unsafe_allow_html=True,
-    )
+            perform_search(
+                scanned
+            )
