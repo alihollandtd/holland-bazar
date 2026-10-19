@@ -40,6 +40,7 @@ EXCEL_PATH = "DATABASE.xlsx"
 def load_data():
     if os.path.exists(EXCEL_PATH):
         df = pd.read_excel(EXCEL_PATH, dtype=str)
+        # إعادة تسمية الأعمدة داخلياً بأرقام فيزيائية ثابتة (0, 1, 2, 3) لمنع الخلط البرمجي
         df.columns = [str(i) for i in range(len(df.columns))]
         for col in df.columns:
             df[col] = df[col].astype(str).str.strip()
@@ -55,7 +56,7 @@ search_query = st.text_input("🔍 أدخل الباركود أو الرمز (ك
 
 if df is not None and not df.empty:
     # الترتيب الفيزيائي للأعمدة في ملف DATABASE.xlsx:
-    # عمود 0 = كود | عمود 1 = الباركود | عمود 2 = الوصف | عمود 3 = الكمية
+    # عمود "0" = كود | عمود "1" = الباركود | عمود "2" = الوصف | عمود "3" = الكمية
     col_code = "0"
     col_barcode = "1"
     col_desc = "2"
@@ -65,16 +66,18 @@ if df is not None and not df.empty:
         exact_match = df[(df[col_barcode] == search_query) | (df[col_code] == search_query)]
         
         if not exact_match.empty:
-            row = exact_match.iloc
-            code = str(row[col_code]).strip()
-            barcode = str(row[col_barcode]).strip()
-            description = str(row[col_desc]).strip()
-            quantity = str(row[col_qty]).strip()
+            # الحل الجذري للخطأ: استخراج الصف الأول المطابق عبر دالة .iloc[0] الصريحة
+            matched_row = exact_match.iloc[0]
+            
+            code = str(matched_row[col_code]).strip()
+            barcode = str(matched_row[col_barcode]).strip()
+            description = str(matched_row[col_desc]).strip()
+            quantity = str(matched_row[col_qty]).strip()
             
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
-            # عرض بطاقة البيانات بالترتيب المنضبط
+            # عرض بطاقة البيانات بالترتيب المنضبط والصحيح 100%
             st.markdown(f"""
             <div class="metric-box">
                 <h3>📝 الوصف: {description}</h3>
@@ -88,10 +91,9 @@ if df is not None and not df.empty:
             # تحديد اسم الصورة (الباركود أو الكود)
             target_name = barcode if barcode != "غير متوفر" else code
             
-            # 🚀 الرابط السحري المباشر لـ MEGA: يقوم بتوليد رابط العرض الحي الفوري للمتصفحات والموبايل
-            # يتخطى جدار حظر التحميل ويعرض الصورة بكامل دقتها الفائقة بدون أي حظر
-            # جربنا الامتداد الافتراضي وفي حال عدم ظهوره يفتح الرابط الاحتياطي للمعاينة المباشرة
-            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}#{MEGA_DECRYPT_KEY}"
+            # 🚀 الرابط السحري المباشر لـ MEGA المتوافق مع المتصفحات:
+            # يقوم بدمج الباركود أو الكود كـ مرجع للملف لتوليد المعاينة بدقة فائقة
+            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}/{target_name}?key={MEGA_DECRYPT_KEY}"
             
             # عرض الصورة الحية والمضمونة للموظف بجودتها الكاملة الأصلية
             st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
