@@ -513,12 +513,10 @@ SCANNER_HTML = """
         <div>
             <div class="scanner-title">📷 ماسح الباركود</div>
             <div class="scanner-caption">
-                وجّه الكاميرا إلى الباركود
+                استخدم الكاميرا الخلفية وقرّب الباركود داخل الإطار
             </div>
         </div>
-        <div id="scanner-status" class="scanner-status">
-            جاهز
-        </div>
+        <div id="scanner-status" class="scanner-status">جاهز</div>
     </div>
 
     <div id="scanner-reader"></div>
@@ -527,33 +525,23 @@ SCANNER_HTML = """
         <button id="scanner-start" class="scanner-primary">
             تشغيل الكاميرا
         </button>
-
         <button id="scanner-stop" class="scanner-secondary" disabled>
             إيقاف
         </button>
-
         <button id="scanner-file" class="scanner-secondary">
             قراءة صورة
         </button>
-
-        <input
-            id="scanner-file-input"
-            type="file"
-            accept="image/*"
-            hidden
-        />
+        <input id="scanner-file-input" type="file" accept="image/*" hidden />
     </div>
 
     <div class="scanner-instructions">
-        <b>نصيحة:</b>
-        استخدم الكاميرا الخلفية، قرّب الهاتف من الباركود،
-        وتأكد أن جميع الخطوط ظاهرة بوضوح.
+        <b>لأفضل قراءة:</b>
+        اجعل الباركود مستقيماً، قريباً، ومضاءً جيداً.
+        لا تحتاج إلى الضغط على زر الالتقاط.
     </div>
 
     <div id="scanner-result" class="scanner-result">
-        <div class="scanner-result-label">
-            الباركود المقروء
-        </div>
+        <div class="scanner-result-label">الباركود المقروء</div>
         <div id="scanner-value"></div>
     </div>
 
@@ -566,217 +554,137 @@ SCANNER_CSS = """
     width: 100%;
     box-sizing: border-box;
     direction: rtl;
-    font-family:
-        Inter,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
     color: var(--st-text-color, #f8fafc);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
-
 .scanner-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
 }
-
-.scanner-title {
-    font-size: 19px;
-    font-weight: 850;
-}
-
-.scanner-caption {
-    color: var(--st-secondary-text-color, #94a3b8);
-    font-size: 12px;
-    margin-top: 3px;
-}
-
+.scanner-title { font-size:20px; font-weight:850; }
+.scanner-caption { color:#94a3b8; font-size:12px; margin-top:4px; }
 .scanner-status {
-    padding: 7px 12px;
-    border-radius: 999px;
-    background: rgba(34,197,94,.08);
-    border: 1px solid rgba(34,197,94,.25);
-    color: #86efac;
-    font-size: 12px;
-    white-space: nowrap;
+    border:1px solid rgba(34,197,94,.28);
+    background:rgba(34,197,94,.08);
+    color:#86efac;
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:12px;
+    white-space:nowrap;
 }
-
 #scanner-reader {
-    width: 100%;
-    min-height: 285px;
-    overflow: hidden;
-    border-radius: 16px;
-    background: #020617;
-    border: 1px solid #20344d;
+    width:100%;
+    min-height:300px;
+    overflow:hidden;
+    background:#020617;
+    border:1px solid #29425e;
+    border-radius:16px;
 }
-
 #scanner-reader video {
-    width: 100% !important;
-    max-height: 520px !important;
-    object-fit: cover !important;
-    border-radius: 15px !important;
+    width:100% !important;
+    height:auto !important;
+    max-height:560px !important;
+    object-fit:cover !important;
+    border-radius:15px !important;
 }
-
-#scanner-reader img {
-    max-width: 100%;
+#scanner-reader__scan_region {
+    border:0 !important;
 }
-
+#scanner-reader__dashboard,
+#scanner-reader__header_message {
+    display:none !important;
+}
 .scanner-actions {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr 1fr;
-    gap: 8px;
-    margin-top: 10px;
+    display:grid;
+    grid-template-columns:1.25fr 1fr 1fr;
+    gap:8px;
+    margin-top:10px;
 }
-
 .scanner-actions button {
-    min-height: 44px;
-    border-radius: 11px;
-    border: 1px solid #29425e;
-    background: #0b1a2b;
-    color: #e5e7eb;
-    font-weight: 750;
-    cursor: pointer;
+    min-height:45px;
+    border-radius:11px;
+    border:1px solid #29425e;
+    background:#0b1a2b;
+    color:#e5e7eb;
+    font-weight:800;
+    cursor:pointer;
 }
-
-.scanner-actions button:disabled {
-    opacity: .45;
-    cursor: not-allowed;
-}
-
+.scanner-actions button:disabled { opacity:.45; cursor:not-allowed; }
 .scanner-primary {
-    background: linear-gradient(
-        135deg,
-        #22c55e,
-        #15803d
-    ) !important;
-    color: white !important;
-    border: none !important;
+    background:linear-gradient(135deg,#22c55e,#15803d) !important;
+    color:#fff !important;
+    border:0 !important;
 }
-
 .scanner-instructions {
-    margin-top: 10px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: #081525;
-    border: 1px solid #1c344c;
-    color: #94a3b8;
-    font-size: 12px;
-    line-height: 1.8;
-    text-align: center;
+    margin-top:10px;
+    padding:11px 13px;
+    border:1px solid #1c344c;
+    background:#081525;
+    border-radius:12px;
+    color:#94a3b8;
+    font-size:12px;
+    line-height:1.8;
+    text-align:center;
 }
-
 .scanner-result {
-    display: none;
-    margin-top: 11px;
-    padding: 14px;
-    border-radius: 13px;
-    background: rgba(34,197,94,.08);
-    border: 1px solid rgba(34,197,94,.30);
-    text-align: center;
+    display:none;
+    margin-top:11px;
+    padding:14px;
+    border-radius:13px;
+    background:rgba(34,197,94,.08);
+    border:1px solid rgba(34,197,94,.30);
+    text-align:center;
 }
-
-.scanner-result.visible {
-    display: block;
-}
-
-.scanner-result-label {
-    color: #86efac;
-    font-size: 12px;
-}
-
+.scanner-result.visible { display:block; }
+.scanner-result-label { color:#86efac; font-size:12px; }
 #scanner-value {
-    margin-top: 4px;
-    color: white;
-    font-size: 25px;
-    font-weight: 900;
-    direction: ltr;
-    word-break: break-all;
+    margin-top:4px;
+    color:#fff;
+    font-size:25px;
+    font-weight:900;
+    direction:ltr;
+    word-break:break-all;
 }
-
 .scanner-error {
-    display: none;
-    margin-top: 10px;
-    padding: 11px;
-    border-radius: 11px;
-    background: rgba(239,68,68,.08);
-    border: 1px solid rgba(239,68,68,.25);
-    color: #fecaca;
-    font-size: 12px;
-    line-height: 1.7;
+    display:none;
+    margin-top:10px;
+    padding:11px;
+    border-radius:11px;
+    background:rgba(239,68,68,.08);
+    border:1px solid rgba(239,68,68,.30);
+    color:#fecaca;
+    font-size:12px;
+    line-height:1.8;
 }
-
-.scanner-error.visible {
-    display: block;
-}
-
-@media (max-width: 650px) {
-    .scanner-actions {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .scanner-primary {
-        grid-column: 1 / -1;
-    }
+.scanner-error.visible { display:block; }
+@media (max-width:650px) {
+    .scanner-actions { grid-template-columns:1fr 1fr; }
+    .scanner-primary { grid-column:1 / -1; }
 }
 """
 
 SCANNER_JS = r"""
 export default function(component) {
-    const {
-        parentElement,
-        setTriggerValue,
-    } = component;
+    const { parentElement, setTriggerValue } = component;
 
-    const root =
-        parentElement.querySelector(".scanner-shell");
-
-    if (!root) {
-        return;
-    }
-
-    const reader =
-        parentElement.querySelector("#scanner-reader");
-
-    const startButton =
-        parentElement.querySelector("#scanner-start");
-
-    const stopButton =
-        parentElement.querySelector("#scanner-stop");
-
-    const fileButton =
-        parentElement.querySelector("#scanner-file");
-
-    const fileInput =
-        parentElement.querySelector("#scanner-file-input");
-
-    const status =
-        parentElement.querySelector("#scanner-status");
-
-    const resultBox =
-        parentElement.querySelector("#scanner-result");
-
-    const resultValue =
-        parentElement.querySelector("#scanner-value");
-
-    const errorBox =
-        parentElement.querySelector("#scanner-error");
+    const reader = parentElement.querySelector("#scanner-reader");
+    const startButton = parentElement.querySelector("#scanner-start");
+    const stopButton = parentElement.querySelector("#scanner-stop");
+    const fileButton = parentElement.querySelector("#scanner-file");
+    const fileInput = parentElement.querySelector("#scanner-file-input");
+    const status = parentElement.querySelector("#scanner-status");
+    const resultBox = parentElement.querySelector("#scanner-result");
+    const resultValue = parentElement.querySelector("#scanner-value");
+    const errorBox = parentElement.querySelector("#scanner-error");
 
     let scanner = null;
     let running = false;
     let reported = false;
 
-    function setStatus(value) {
-        status.textContent = value;
-    }
-
-    function clearError() {
-        errorBox.textContent = "";
-        errorBox.classList.remove("visible");
-    }
+    const setStatus = value => { status.textContent = value; };
 
     function showError(value) {
         errorBox.textContent = value;
@@ -784,117 +692,74 @@ export default function(component) {
         setStatus("تعذر التشغيل");
     }
 
-    function cleanValue(value) {
-        return String(value || "")
-            .trim()
-            .replace(/\s+/g, "");
+    function clearError() {
+        errorBox.textContent = "";
+        errorBox.classList.remove("visible");
     }
 
-    function plausibleBarcode(value) {
-        if (!value) {
-            return false;
-        }
+    function clean(value) {
+        return String(value || "").trim().replace(/\s+/g, "");
+    }
 
+    function valid(value) {
+        if (!value) return false;
         if (/^\d+$/.test(value)) {
-            return (
-                value.length === 8 ||
-                value.length === 12 ||
-                value.length === 13 ||
-                value.length === 14
-            );
+            return [8, 12, 13, 14].includes(value.length);
         }
-
         return value.length >= 4;
     }
 
-    function loadHtml5QrCode() {
-        if (
-            window.Html5Qrcode &&
-            window.Html5QrcodeSupportedFormats
-        ) {
-            return Promise.resolve();
+    async function loadLibrary() {
+        if (window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
+            return;
         }
 
-        return new Promise((resolve, reject) => {
-            const existing =
-                document.querySelector(
-                    'script[data-holland-h5qr="1"]'
-                );
+        const sources = [
+            "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
+            "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
+        ];
 
-            if (existing) {
-                const timer = setInterval(() => {
-                    if (
-                        window.Html5Qrcode &&
-                        window.Html5QrcodeSupportedFormats
-                    ) {
-                        clearInterval(timer);
-                        resolve();
+        for (const src of sources) {
+            try {
+                await new Promise((resolve, reject) => {
+                    const old = document.querySelector(
+                        'script[data-holland-scanner="1"]'
+                    );
+
+                    if (old) {
+                        old.remove();
                     }
-                }, 50);
 
-                setTimeout(() => {
-                    clearInterval(timer);
+                    const script = document.createElement("script");
+                    script.src = src;
+                    script.async = true;
+                    script.dataset.hollandScanner = "1";
 
-                    if (
-                        window.Html5Qrcode &&
-                        window.Html5QrcodeSupportedFormats
-                    ) {
-                        resolve();
-                    } else {
-                        reject(
-                            new Error(
-                                "Barcode library timeout"
-                            )
-                        );
-                    }
-                }, 15000);
+                    script.onload = () => {
+                        if (
+                            window.Html5Qrcode &&
+                            window.Html5QrcodeSupportedFormats
+                        ) {
+                            resolve();
+                        } else {
+                            reject(new Error("library api missing"));
+                        }
+                    };
+
+                    script.onerror = () => reject(new Error("cdn failed"));
+                    document.head.appendChild(script);
+                });
 
                 return;
-            }
+            } catch (e) {}
+        }
 
-            const script =
-                document.createElement("script");
-
-            script.src =
-                "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
-
-            script.async = true;
-
-            script.dataset.hollandH5qr = "1";
-
-            script.onload = () => {
-                if (
-                    window.Html5Qrcode &&
-                    window.Html5QrcodeSupportedFormats
-                ) {
-                    resolve();
-                } else {
-                    reject(
-                        new Error(
-                            "Barcode library loaded without API"
-                        )
-                    );
-                }
-            };
-
-            script.onerror = () => {
-                reject(
-                    new Error(
-                        "Could not load barcode library"
-                    )
-                );
-            };
-
-            document.head.appendChild(script);
-        });
+        throw new Error("barcode library unavailable");
     }
 
-    function supportedFormats() {
-        const F =
-            window.Html5QrcodeSupportedFormats;
+    function formats() {
+        const F = window.Html5QrcodeSupportedFormats;
 
-        // IMPORTANT:
-        // Read this ONLY after loadHtml5QrCode() completes.
         return [
             F.EAN_13,
             F.EAN_8,
@@ -904,43 +769,24 @@ export default function(component) {
             F.CODE_39,
             F.CODE_93,
             F.ITF,
-            F.CODABAR,
-        ].filter(
-            value =>
-                value !== undefined &&
-                value !== null
-        );
-    }
-
-    function scanBox(width, height) {
-        const boxWidth =
-            Math.floor(width * 0.90);
-
-        const boxHeight =
-            Math.max(
-                110,
-                Math.min(
-                    Math.floor(height * 0.28),
-                    220
-                )
-            );
-
-        return {
-            width: boxWidth,
-            height: boxHeight,
-        };
+            F.CODABAR
+        ].filter(v => v !== undefined && v !== null);
     }
 
     async function stop() {
         if (!scanner || !running) {
+            startButton.disabled = false;
+            stopButton.disabled = true;
             return;
         }
 
         try {
             await scanner.stop();
-        } catch (e) {
-            // Already stopped.
-        }
+        } catch (e) {}
+
+        try {
+            scanner.clear();
+        } catch (e) {}
 
         running = false;
         startButton.disabled = false;
@@ -949,304 +795,191 @@ export default function(component) {
     }
 
     async function success(decodedText) {
-        if (reported) {
-            return;
-        }
+        if (reported) return;
 
-        const value =
-            cleanValue(decodedText);
-
-        if (!plausibleBarcode(value)) {
-            return;
-        }
+        const value = clean(decodedText);
+        if (!valid(value)) return;
 
         reported = true;
-
         resultValue.textContent = value;
         resultBox.classList.add("visible");
-
         setStatus("تمت القراءة");
 
         await stop();
 
-        // One event -> one Streamlit rerun.
-        setTriggerValue(
-            "barcode",
-            value
-        );
+        setTriggerValue("barcode", value);
     }
 
     async function start() {
-        if (running) {
-            return;
-        }
+        if (running) return;
 
         clearError();
-
-        resultBox.classList.remove(
-            "visible"
-        );
-
+        resultBox.classList.remove("visible");
         resultValue.textContent = "";
-
         reported = false;
 
         try {
-            setStatus(
-                "جاري تحميل القارئ..."
-            );
+            setStatus("تحميل محرك القراءة...");
+            await loadLibrary();
 
-            // FIX FOR THE PREVIOUS ERROR:
-            // We wait for the script BEFORE accessing
-            // Html5QrcodeSupportedFormats.
-            await loadHtml5QrCode();
-
-            const formats =
-                supportedFormats();
-
-            scanner =
-                new window.Html5Qrcode(
-                    reader.id,
-                    {
-                        formatsToSupport:
-                            formats,
-                        useBarCodeDetectorIfSupported:
-                            true,
-                        verbose: false,
-                    }
-                );
-
-            setStatus(
-                "جاري العثور على الكاميرا..."
-            );
-
-            const cameras =
-                await window.Html5Qrcode.getCameras();
-
-            if (
-                !cameras ||
-                cameras.length === 0
-            ) {
-                throw new Error(
-                    "No camera found"
-                );
-            }
-
-            // Prefer rear/environment camera.
-            const preferred =
-                cameras.find(
-                    camera => {
-                        const label =
-                            (
-                                camera.label ||
-                                ""
-                            ).toLowerCase();
-
-                        return (
-                            label.includes("back") ||
-                            label.includes("rear") ||
-                            label.includes("environment") ||
-                            label.includes("خلف")
-                        );
-                    }
-                ) ||
-                cameras[cameras.length - 1];
-
-            setStatus(
-                "وجّه الباركود إلى الإطار"
-            );
-
-            await scanner.start(
-                preferred.id,
+            // IMPORTANT CHANGE:
+            // Do NOT call getCameras()/enumerateDevices().
+            // Request the environment camera directly.
+            // This avoids camera-enumeration failures on some
+            // browsers/hosted Streamlit deployments.
+            scanner = new window.Html5Qrcode(
+                reader.id,
                 {
-                    fps: 12,
-                    aspectRatio: 1.7777778,
-                    qrbox: scanBox,
-                    disableFlip: true,
-                },
-                success,
-                function() {
-                    // Normal frame misses are ignored.
+                    formatsToSupport: formats(),
+                    useBarCodeDetectorIfSupported: true,
+                    verbose: false
                 }
             );
 
-            running = true;
+            setStatus("طلب تشغيل الكاميرا...");
 
+            const config = {
+                fps: 15,
+                aspectRatio: 1.7777778,
+                qrbox: function(width, height) {
+                    return {
+                        width: Math.floor(width * 0.90),
+                        height: Math.max(
+                            120,
+                            Math.min(
+                                Math.floor(height * 0.32),
+                                240
+                            )
+                        )
+                    };
+                },
+                disableFlip: true
+            };
+
+            await scanner.start(
+                { facingMode: { ideal: "environment" } },
+                config,
+                success,
+                function() {}
+            );
+
+            running = true;
             startButton.disabled = true;
             stopButton.disabled = false;
+            setStatus("وجّه الباركود إلى الإطار");
 
-            setStatus(
-                "امسح الباركود الآن"
-            );
+            // Try continuous autofocus / modest zoom when supported.
+            setTimeout(async () => {
+                try {
+                    const caps =
+                        scanner.getRunningTrackCapabilities();
 
-            // Give the browser a moment to expose
-            // the active camera track.
-            setTimeout(
-                async () => {
-                    try {
-                        const capabilities =
-                            scanner.getRunningTrackCapabilities();
+                    const advanced = {};
 
-                        const advanced = {};
-
-                        if (
-                            capabilities &&
-                            capabilities.focusMode &&
-                            capabilities.focusMode.includes(
-                                "continuous"
-                            )
-                        ) {
-                            advanced.focusMode =
-                                "continuous";
-                        }
-
-                        if (
-                            capabilities &&
-                            capabilities.zoom &&
-                            capabilities.zoom.max >
-                                capabilities.zoom.min
-                        ) {
-                            advanced.zoom =
-                                Math.min(
-                                    capabilities.zoom.max,
-                                    Math.max(
-                                        capabilities.zoom.min,
-                                        capabilities.zoom.min +
-                                        (
-                                            capabilities.zoom.max -
-                                            capabilities.zoom.min
-                                        ) * 0.25
-                                    )
-                                );
-                        }
-
-                        if (
-                            Object.keys(
-                                advanced
-                            ).length
-                        ) {
-                            await scanner.applyVideoConstraints(
-                                {
-                                    advanced: [
-                                        advanced
-                                    ]
-                                }
-                            );
-                        }
-                    } catch (e) {
-                        // Focus/zoom is optional.
+                    if (
+                        caps &&
+                        caps.focusMode &&
+                        caps.focusMode.includes("continuous")
+                    ) {
+                        advanced.focusMode = "continuous";
                     }
-                },
-                800
-            );
+
+                    if (
+                        caps &&
+                        caps.zoom &&
+                        caps.zoom.max > caps.zoom.min
+                    ) {
+                        advanced.zoom =
+                            caps.zoom.min +
+                            (caps.zoom.max - caps.zoom.min) * 0.20;
+                    }
+
+                    if (Object.keys(advanced).length) {
+                        await scanner.applyVideoConstraints({
+                            advanced: [advanced]
+                        });
+                    }
+                } catch (e) {}
+            }, 900);
 
         } catch (error) {
-            console.error(
-                "Holland Bazar scanner:",
-                error
-            );
+            console.error("Holland Bazar camera error:", error);
 
             await stop();
 
-            const message =
-                String(error || "");
+            const msg = String(error || "").toLowerCase();
 
             if (
-                message
-                    .toLowerCase()
-                    .includes("permission")
+                msg.includes("notallowed") ||
+                msg.includes("permission") ||
+                msg.includes("denied")
             ) {
                 showError(
-                    "صلاحية الكاميرا مرفوضة. اسمح للموقع باستخدام الكاميرا ثم اضغط تشغيل الكاميرا مرة أخرى."
+                    "المتصفح رفض الوصول إلى الكاميرا. رغم إعطاء الصلاحية، أعد تحميل الصفحة ثم اضغط تشغيل الكاميرا مرة أخرى."
                 );
             } else if (
-                message
-                    .toLowerCase()
-                    .includes("secure")
+                msg.includes("notfound") ||
+                msg.includes("no camera")
             ) {
                 showError(
-                    "الكاميرا تحتاج إلى اتصال HTTPS."
+                    "لم يتم العثور على كاميرا. جرّب فتح الموقع من Chrome وتأكد أن الكاميرا تعمل."
                 );
             } else if (
-                message
-                    .toLowerCase()
-                    .includes("no camera")
+                msg.includes("notreadable") ||
+                msg.includes("trackstart")
             ) {
                 showError(
-                    "لم يتم العثور على كاميرا في هذا الجهاز."
+                    "الكاميرا مستخدمة من برنامج آخر. أغلق Camera/Teams/Zoom وأعد المحاولة."
                 );
             } else if (
-                message
-                    .toLowerCase()
-                    .includes("barcode library")
+                msg.includes("library")
             ) {
                 showError(
-                    "تعذر تحميل محرك قراءة الباركود. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة."
+                    "لم يتم تحميل محرك الباركود. أعد تحميل الصفحة وتأكد من اتصال الإنترنت."
                 );
             } else {
                 showError(
-                    "تعذر تشغيل قارئ الباركود. افتح صلاحيات الكاميرا في المتصفح ثم جرّب مرة أخرى."
+                    "فشل تشغيل الكاميرا. افتح أدوات المطور في Chrome لرؤية الخطأ التفصيلي."
                 );
             }
         }
     }
 
     async function scanFile(file) {
-        if (!file) {
-            return;
-        }
+        if (!file) return;
 
         clearError();
-
         reported = false;
 
         try {
-            setStatus(
-                "تحليل الصورة..."
-            );
-
-            await loadHtml5QrCode();
+            setStatus("تحليل الصورة...");
+            await loadLibrary();
 
             if (!scanner) {
-                scanner =
-                    new window.Html5Qrcode(
-                        reader.id,
-                        {
-                            formatsToSupport:
-                                supportedFormats(),
-                            useBarCodeDetectorIfSupported:
-                                true,
-                            verbose: false,
-                        }
-                    );
+                scanner = new window.Html5Qrcode(
+                    reader.id,
+                    {
+                        formatsToSupport: formats(),
+                        useBarCodeDetectorIfSupported: true,
+                        verbose: false
+                    }
+                );
             }
 
-            const value =
-                await scanner.scanFile(
-                    file,
-                    false
-                );
+            const value = await scanner.scanFile(file, false);
 
             await success(value);
 
         } catch (error) {
-            console.error(error);
-
+            console.error("Holland Bazar image scan:", error);
             showError(
-                "لم يتم العثور على باركود واضح في الصورة. صوّر الملصق من قريب وبإضاءة جيدة."
+                "لم يتم العثور على باركود واضح في الصورة. قرّب الملصق وصوّره بشكل مستقيم."
             );
         }
     }
 
-    startButton.addEventListener(
-        "click",
-        start
-    );
-
-    stopButton.addEventListener(
-        "click",
-        stop
-    );
+    startButton.addEventListener("click", start);
+    stopButton.addEventListener("click", stop);
 
     fileButton.addEventListener(
         "click",
@@ -1260,30 +993,20 @@ export default function(component) {
                 event.target.files &&
                 event.target.files[0];
 
-            if (file) {
-                scanFile(file);
-            }
-
+            if (file) scanFile(file);
             fileInput.value = "";
         }
     );
 
-    // Do not request camera permission automatically.
-    loadHtml5QrCode()
-        .then(() => {
-            setStatus("جاهز");
-        })
-        .catch(() => {
-            // The user can still retry through the button.
-            setStatus("جاهز");
-        });
+    // Preload the library without requesting camera permission.
+    loadLibrary()
+        .then(() => setStatus("جاهز"))
+        .catch(() => setStatus("جاهز"));
 
     return () => {
         try {
             if (scanner && running) {
-                scanner.stop().catch(
-                    () => {}
-                );
+                scanner.stop().catch(() => {});
             }
         } catch (e) {}
     };
@@ -1291,11 +1014,12 @@ export default function(component) {
 """
 
 barcode_component = components.component(
-    "holland_bazar_barcode_scanner_v2",
+    "holland_bazar_barcode_scanner_v3",
     html=SCANNER_HTML,
     css=SCANNER_CSS,
     js=SCANNER_JS,
 )
+
 
 
 # ============================================================
@@ -1503,7 +1227,7 @@ with scanner_tab:
         )
 
         result = barcode_component(
-            key="warehouse_scanner_v2",
+            key="warehouse_scanner_v3",
             on_barcode_change=lambda: None,
         )
 
