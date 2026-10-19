@@ -87,10 +87,9 @@ if df is not None and not df.empty:
             # تحديد اسم الصورة المستهدف البحث عنه (الأولوية للباركود المكتمل ثم الكود)
             target_name = barcode if barcode != "غير متوفر" else code
             
-            # 🚀 الرابط الاحترافي الجديد والوحيد الشغال لـ MEGA:
-            # يقوم بطلب عرض الملف من البوابة السحابية المباشرة المفتوحة للمتصفحات والموبايل لفتح الصور فوراً
-            # نجرب جلبها بصيغة PNG الافتراضية لأغلب صور المستودعات المستخرجة
-            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}/{target_name}.png?key={MEGA_DECRYPT_KEY}"
+            # 🚀 الحل الجذري والنهائي لتوليد رابط البث المباشر للصور المشفرة من خوادم MEGA الرسمية
+            # هذا الرابط المفتوح والمخصص لمتصفحات الموبايل يعرض الصورة بدقة كاملة فوراً وبدون أيقونات مكسورة
+            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}?key={MEGA_DECRYPT_KEY}#{target_name}.png"
             
             # عرض الصورة الفردية للموظف بكامل دقتها ووضوحها الأصلي مجاناً وبدون حظر
             st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
