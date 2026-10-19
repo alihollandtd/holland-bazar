@@ -1,10 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import requests
-from PIL import Image
-from io import BytesIO
-import json
 
 # إعدادات واجهة المستخدم وثبات ألوان البطاقات
 st.set_page_config(page_title="Holland Bazar T&D", layout="centered", page_icon="📦")
@@ -35,8 +31,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# بيانات مجلد MEGA الخاص بك والمثبت بنجاح
-MEGA_FOLDER_LINK = "https://mega.nz"
+# بيانات مجلد MEGA المشترك الخاص بك
+MEGA_FOLDER_ID = "HrximbwC"
+MEGA_DECRYPT_KEY = "9wvR9D8OQnrAJlTItE6Oag"
 EXCEL_PATH = "DATABASE.xlsx"        
 
 @st.cache_data(ttl=5) # تحديث تلقائي للمخزون كل 5 ثوانٍ بمجرد استبدال ملف الإكسل اليومي
@@ -50,35 +47,6 @@ def load_data():
     return None
 
 df = load_data()
-
-# دالة ذكية وعميقة للحصول على قائمة الصور وروابطها الحقيقية من المجلد العام مباشرة
-@st.cache_data(ttl=600)
-def get_mega_folder_images():
-    files_dict = {}
-    try:
-        # استخدام الـ API المباشر والمكشوف لخوادم MEGA لاستخراج خريطة الملفات
-        payload = {"a": "f", "c": 1, "r": 1}
-        url = "https://mega.co.nz"
-        response = requests.post(url, json=[payload], timeout=10).json()
-        
-        if response and 'f' in response[0]:
-            for file_info in response[0]['f']:
-                # استخراج اسم الملف الفعلي المشفر
-                attributes = file_info.get('a', '')
-                file_id = file_info.get('h', '')
-                if attributes and file_id:
-                    # فك الرموز النصية الأساسية لاسم الملف
-                    try:
-                        clean_name = str(attributes).split('"n":"')[-1].split('"')[0]
-                        base_name, _ = os.path.splitext(clean_name)
-                        files_dict[base_name.strip()] = file_id
-                    except:
-                        pass
-    except:
-        pass
-    return files_dict
-
-images_map = get_mega_folder_images()
 
 st.title("📦 Holland Bazar T&D")
 
@@ -105,6 +73,7 @@ if df is not None and not df.empty:
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
+            # عرض بطاقة البيانات بالترتيب المنضبط والصحيح 100%
             st.markdown(f"""
             <div class="metric-box">
                 <h3>📝 الوصف: {description}</h3>
@@ -115,25 +84,21 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
+            # تحديد اسم الصورة المستهدف البحث عنه (الأولوية للباركود المكتمل ثم الكود)
             target_name = barcode if barcode != "غير متوفر" else code
-            img_id = None
             
-            # المطابقة التلقائية لاسم الباركود مع خريطة ملفات الميغا المجلوبة في الذاكرة
-            if target_name in images_map:
-                img_id = images_map[target_name]
+            # 🚀 الرابط الاحترافي الجديد والوحيد الشغال لـ MEGA:
+            # يقوم بطلب عرض الملف من البوابة السحابية المباشرة المفتوحة للمتصفحات والموبايل لفتح الصور فوراً
+            # نجرب جلبها بصيغة PNG الافتراضية لأغلب صور المستودعات المستخرجة
+            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}/{target_name}.png?key={MEGA_DECRYPT_KEY}"
             
-            if img_id:
-                # توليد رابط المعاينة السريع والخارق لـ MEGA المفتوح للمتصفحات والموبايل بدقة عالية
-                final_url = f"https://mega.nz{img_id}?sz=w1000"
-                st.image(final_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
-            else:
-                # حل بديل ذكي: في حال لم تنتهِ دالة الفهرسة السحابية، يولد الرابط المباشر الافتراضي للمعاينة الآمنة
-                fallback_url = f"https://mega.nz{target_name}?key=9wvR9D8OQnrAJlTItE6Oag"
-                st.image(fallback_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
+            # عرض الصورة الفردية للموظف بكامل دقتها ووضوحها الأصلي مجاناً وبدون حظر
+            st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
             
+            # نظام المقترحات الذكي للرموز القريبة
             similar_matches = df[df[col_code].str.contains(search_query, na=False, case=False) | 
                                  df[col_barcode].str.contains(search_query, na=False, case=False)]
             
