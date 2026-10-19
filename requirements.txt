@@ -1,7 +1,6 @@
+```text
 streamlit
 pandas
 openpyxl
-mega.py==1.0.8
-tenacity>=9.1.4
-requests
-pycryptodome
+async-mega-py
+```
