@@ -508,177 +508,392 @@ def download_mega_image(node_handle, node_key):
 
 
 # ============================================================
-# NATIVE CAMERA BARCODE SCANNER
+# NATIVE CAMERA BARCODE SCANNER — V5
+#
+# Camera:
+#   Streamlit native st.camera_input()
+#
+# Decoder:
+#   ZXing-C++ Python bindings (zxingcpp)
+#
+# Why ZXing-C++:
+#   It is a dedicated multi-format barcode reader and supports
+#   retail/warehouse formats including EAN/UPC, Code 128,
+#   Code 39/93, ITF and Codabar. It also has built-in rotation,
+#   downscale and invert attempts.
 # ============================================================
 
-from PIL import Image
+from PIL import Image, ImageOps, ImageEnhance, ImageFilter
 import numpy as np
 import cv2
 
 try:
-    from pyzbar.pyzbar import decode as zbar_decode
-    from pyzbar.pyzbar import ZBarSymbol
-    ZBAR_AVAILABLE = True
+    import zxingcpp
+    ZXING_AVAILABLE = True
 except Exception:
-    ZBAR_AVAILABLE = False
-    ZBarSymbol = None
+    zxingcpp = None
+    ZXING_AVAILABLE = False
 
 
-def barcode_candidates_from_image(uploaded_file):
-    if not uploaded_file or not ZBAR_AVAILABLE:
+def _barcode_text(value):
+    """Normalize ZXing output for database matching."""
+    if value is None:
+        return ""
+
+    value = str(value).strip()
+
+    # Keep barcode data intact. Only remove accidental whitespace.
+    return "".join(value.split())
+
+
+def _decode_zxing(image):
+    """
+    Run ZXing-C++ with its own robust reader options.
+
+    ZXing-C++ supports:
+      - rotation search
+      - downscale search
+      - inverted barcode search
+      - local-average binarization by default
+
+    We deliberately do not restrict the format list, because
+    warehouse labels may be Code128, EAN/UPC, ITF, etc.
+    """
+    if not ZXING_AVAILABLE:
         return []
 
     try:
-        original = Image.open(uploaded_file).convert("RGB")
+        results = zxingcpp.read_barcodes(
+            image,
+            try_rotate=True,
+            try_downscale=True,
+            try_invert=True,
+            return_errors=False,
+        )
     except Exception:
         return []
 
-    max_dimension = 2400
-    if max(original.size) > max_dimension:
-        scale = max_dimension / max(original.size)
-        original = original.resize(
+    decoded = []
+
+    for item in results:
+        text_value = _barcode_text(
+            getattr(item, "text", "")
+        )
+
+        if not text_value:
+            continue
+
+        decoded.append(
+            {
+                "value": text_value,
+                "type": str(
+                    getattr(
+                        item,
+                        "format",
+                        "UNKNOWN",
+                    )
+                ),
+                "position": getattr(
+                    item,
+                    "position",
+                    None,
+                ),
+            }
+        )
+
+    return decoded
+
+
+def _image_variants(pil_image):
+    """
+    Generate a small, deliberate set of high-value variants.
+
+    We do not destroy the original image or aggressively blur it.
+    The goal is to preserve the narrow barcode bars while giving
+    ZXing a few different representations to work with.
+    """
+    image = pil_image.convert("RGB")
+
+    # Keep enough resolution for small labels.
+    max_dimension = 3000
+
+    if max(image.size) > max_dimension:
+        scale = max_dimension / max(image.size)
+        image = image.resize(
             (
-                max(1, int(original.width * scale)),
-                max(1, int(original.height * scale)),
+                max(1, int(image.width * scale)),
+                max(1, int(image.height * scale)),
             ),
             Image.Resampling.LANCZOS,
         )
 
-    rgb = np.array(original)
-    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    yield ("original", image)
 
-    variants = [
-        ("original", rgb),
-        ("gray", gray),
-        (
-            "upscaled",
-            cv2.resize(
-                gray,
-                None,
-                fx=2.0,
-                fy=2.0,
-                interpolation=cv2.INTER_CUBIC,
-            ),
-        ),
-    ]
+    gray = ImageOps.grayscale(image)
+    yield ("gray", gray)
 
-    clahe = cv2.createCLAHE(
-        clipLimit=2.5,
-        tileGridSize=(8, 8),
-    )
-    variants.append(("contrast", clahe.apply(gray)))
+    # Moderate contrast.
+    contrast = ImageEnhance.Contrast(gray).enhance(1.7)
+    yield ("contrast", contrast)
 
-    blur = cv2.GaussianBlur(gray, (0, 0), 2.0)
-    variants.append(
-        (
-            "sharpened",
-            cv2.addWeighted(
-                gray, 1.7, blur, -0.7, 0
-            ),
+    # Moderate sharpening.
+    sharp = contrast.filter(
+        ImageFilter.UnsharpMask(
+            radius=1.2,
+            percent=150,
+            threshold=3,
         )
     )
+    yield ("sharp", sharp)
 
-    _, otsu = cv2.threshold(
-        gray,
-        0,
-        255,
-        cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+    # Upscale grayscale for small printed labels.
+    upscale = gray.resize(
+        (
+            gray.width * 2,
+            gray.height * 2,
+        ),
+        Image.Resampling.LANCZOS,
     )
-    variants.append(("otsu", otsu))
+    yield ("upscale", upscale)
 
+    # OpenCV adaptive threshold is useful when the warehouse
+    # lighting is uneven.
+    arr = np.array(gray)
     adaptive = cv2.adaptiveThreshold(
-        gray,
+        arr,
         255,
         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY,
         31,
         7,
     )
-    variants.append(("adaptive", adaptive))
-    variants.append(
-        ("inverted", cv2.bitwise_not(gray))
+    yield (
+        "adaptive",
+        Image.fromarray(adaptive),
+    )
+
+    # Otsu threshold.
+    _, otsu = cv2.threshold(
+        arr,
+        0,
+        255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+    )
+    yield (
+        "otsu",
+        Image.fromarray(otsu),
+    )
+
+    # Inverted barcode.
+    yield (
+        "inverted",
+        ImageOps.invert(gray),
+    )
+
+
+def _crop_barcode_regions(pil_image):
+    """
+    Use OpenCV's barcode detector only as a LOCALIZER.
+
+    It is not our main decoder. If OpenCV can locate a barcode
+    quadrilateral, crop it with generous margins and let ZXing-C++
+    do the actual decoding.
+    """
+    crops = []
+
+    try:
+        detector = cv2.barcode_BarcodeDetector()
+    except Exception:
+        return crops
+
+    try:
+        image = cv2.cvtColor(
+            np.array(pil_image.convert("RGB")),
+            cv2.COLOR_RGB2BGR,
+        )
+
+        ok, decoded_info, points, _ = (
+            detector.detectAndDecodeMulti(image)
+        )
+
+        if not ok or points is None:
+            return crops
+
+        points = np.asarray(points)
+
+        for idx, polygon in enumerate(points):
+            polygon = np.asarray(
+                polygon,
+                dtype=np.float32,
+            ).reshape(-1, 2)
+
+            if polygon.shape[0] < 4:
+                continue
+
+            x1 = max(
+                0,
+                int(np.min(polygon[:, 0])) - 60,
+            )
+            y1 = max(
+                0,
+                int(np.min(polygon[:, 1])) - 60,
+            )
+            x2 = min(
+                image.shape[1],
+                int(np.max(polygon[:, 0])) + 60,
+            )
+            y2 = min(
+                image.shape[0],
+                int(np.max(polygon[:, 1])) + 60,
+            )
+
+            if x2 <= x1 or y2 <= y1:
+                continue
+
+            crop = image[y1:y2, x1:x2]
+
+            if crop.size == 0:
+                continue
+
+            crop_rgb = cv2.cvtColor(
+                crop,
+                cv2.COLOR_BGR2RGB,
+            )
+
+            crops.append(
+                (
+                    f"localized-{idx + 1}",
+                    Image.fromarray(crop_rgb),
+                )
+            )
+
+    except Exception:
+        pass
+
+    return crops
+
+
+def barcode_candidates_from_image(uploaded_file):
+    """
+    Main decoder.
+
+    Strategy:
+      1. Decode original image with ZXing-C++.
+      2. Try localized barcode crops.
+      3. Try enhanced image variants.
+      4. Try center/landscape crops for phone photos.
+      5. Deduplicate results.
+    """
+    if not uploaded_file or not ZXING_AVAILABLE:
+        return []
+
+    try:
+        image = Image.open(uploaded_file).convert("RGB")
+    except Exception:
+        return []
+
+    attempts = []
+
+    # Original first: never throw away information.
+    attempts.append(
+        ("original", image)
+    )
+
+    # Barcode localizer crops.
+    attempts.extend(
+        _crop_barcode_regions(image)
+    )
+
+    # Center crop: useful when the user follows the scanner
+    # guide and places the barcode in the middle of the frame.
+    w, h = image.size
+
+    cx1 = int(w * 0.05)
+    cx2 = int(w * 0.95)
+    cy1 = int(h * 0.20)
+    cy2 = int(h * 0.80)
+
+    if cx2 > cx1 and cy2 > cy1:
+        attempts.append(
+            (
+                "center",
+                image.crop(
+                    (cx1, cy1, cx2, cy2)
+                ),
+            )
+        )
+
+    # Try a broad horizontal band. This is especially useful for
+    # labels where the barcode occupies the middle third.
+    by1 = int(h * 0.25)
+    by2 = int(h * 0.75)
+
+    if by2 > by1:
+        attempts.append(
+            (
+                "middle-band",
+                image.crop(
+                    (0, by1, w, by2)
+                ),
+            )
+        )
+
+    # Add enhanced variants.
+    attempts.extend(
+        list(_image_variants(image))
     )
 
     found = {}
 
-    # pyzbar/ZBar uses I25 for Interleaved 2 of 5.
-    # Some builds do not expose every symbol as an enum member,
-    # so build this list defensively instead of accessing a
-    # missing attribute such as ZBarSymbol.ITF.
-    symbol_names = [
-        "EAN13",
-        "EAN8",
-        "UPCA",
-        "UPCE",
-        "CODE128",
-        "CODE39",
-        "CODE93",
-        "I25",
-        "CODABAR",
-    ]
-
-    symbols = [
-        getattr(ZBarSymbol, name)
-        for name in symbol_names
-        if hasattr(ZBarSymbol, name)
-    ]
-
-    # If a particular ZBar build exposes no symbol constants,
-    # let ZBar use its normal default decoder set.
-    if not symbols:
-        symbols = None
-
-    for variant_name, image in variants:
-        try:
-            if symbols is None:
-                decoded = zbar_decode(image)
-            else:
-                decoded = zbar_decode(
-                    image,
-                    symbols=symbols,
-                )
-        except Exception:
-            continue
+    # Prevent an excessive number of expensive attempts.
+    for attempt_name, candidate in attempts[:14]:
+        decoded = _decode_zxing(candidate)
 
         for item in decoded:
-            try:
-                value = (
-                    item.data
-                    .decode(
-                        "utf-8",
-                        errors="ignore",
-                    )
-                    .strip()
-                )
-            except Exception:
-                continue
+            value = item["value"]
 
             if not value:
                 continue
 
-            barcode_type = str(
-                getattr(item, "type", "UNKNOWN")
+            key = (
+                value,
+                item["type"],
             )
-            quality = getattr(item, "quality", None)
-
-            key = (value, barcode_type)
 
             if key not in found:
                 found[key] = {
                     "value": value,
-                    "type": barcode_type,
-                    "quality": quality,
-                    "variant": variant_name,
+                    "type": item["type"],
+                    "attempt": attempt_name,
                 }
 
     results = list(found.values())
-    results.sort(
-        key=lambda x: (
-            not x["value"].isdigit(),
-            -len(x["value"]),
-            -(x["quality"] or 0),
+
+    # Prefer:
+    #   1. exact database matches
+    #   2. numeric retail barcodes
+    #   3. longer values
+    def score(item):
+        value = item["value"]
+
+        exact = not df[
+            (df["0"] == value)
+            | (df["1"] == value)
+        ].empty
+
+        numeric = value.isdigit()
+
+        return (
+            int(exact),
+            int(numeric),
+            len(value),
         )
+
+    results.sort(
+        key=score,
+        reverse=True,
     )
+
     return results
 
 
@@ -688,10 +903,12 @@ def barcode_matches_database(results):
 
     for result in results:
         value = result["value"]
+
         exact = df[
             (df["0"] == value)
             | (df["1"] == value)
         ]
+
         if not exact.empty:
             return result
 
@@ -700,29 +917,39 @@ def barcode_matches_database(results):
 
 def camera_scanner_ui():
     st.subheader("📷 قارئ الباركود")
+
     st.caption(
-        "استخدم كاميرا الجهاز لالتقاط صورة واضحة للباركود، "
-        "ثم سيقوم النظام بقراءته والبحث عنه."
+        "صوّر الباركود بوضوح. لا تحتاج إلى التقاط المنتج كاملاً؛ "
+        "اجعل الباركود كبيراً ومستقيماً داخل الصورة."
     )
 
     with st.container(border=True):
-        st.markdown("### طريقة الاستخدام")
-        st.write("1. اضغط على زر الكاميرا.")
-        st.write("2. قرّب الباركود واجعله مستقيماً وواضحاً.")
-        st.write("3. التقط الصورة.")
-        st.write("4. سيقرأ النظام الباركود تلقائياً.")
+
+        st.markdown(
+            "### 📸 تصوير الباركود"
+        )
+
+        st.info(
+            "أفضل نتيجة: قرّب الهاتف حتى تملأ خطوط الباركود "
+            "معظم عرض الصورة، وتجنب اللمعان والاهتزاز."
+        )
 
         camera_photo = st.camera_input(
-            "📷 التقاط صورة للباركود",
-            key="warehouse_barcode_camera_v4",
+            "التقاط صورة للباركود",
+            key="warehouse_barcode_camera_v5",
             resolution="1080p",
             label_visibility="visible",
         )
 
     uploaded_photo = st.file_uploader(
-        "أو ارفع صورة باركود من الجهاز",
-        type=["jpg", "jpeg", "png", "webp"],
-        key="barcode_image_upload_v4",
+        "أو اختر صورة من الجهاز",
+        type=[
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+        ],
+        key="barcode_image_upload_v5",
     )
 
     photo = (
@@ -732,13 +959,12 @@ def camera_scanner_ui():
     )
 
     if photo is None:
-        st.info(
-            "📷 اضغط على الكاميرا أعلاه لالتقاط صورة."
-        )
         return
 
+    st.divider()
+
     left, right = st.columns(
-        [1.35, 1],
+        [1.45, 1],
         gap="large",
     )
 
@@ -750,25 +976,58 @@ def camera_scanner_ui():
         )
 
     with right:
-        with st.spinner("جاري قراءة الباركود..."):
-            results = barcode_candidates_from_image(photo)
 
-        if not results:
+        if not ZXING_AVAILABLE:
             st.error(
-                "لم يتم العثور على باركود واضح في الصورة."
-            )
-            st.warning(
-                "قرّب الكاميرا من الباركود، "
-                "اجعل الخطوط كلها ظاهرة، "
-                "وتجنب الانعكاس أو الضبابية."
+                "محرك ZXing-C++ غير مثبت. "
+                "تأكد من وجود zxing-cpp في requirements.txt."
             )
             return
 
-        best = barcode_matches_database(results)
+        with st.spinner(
+            "جاري تحليل الباركود..."
+        ):
+            results = (
+                barcode_candidates_from_image(
+                    photo
+                )
+            )
 
-        st.success("تمت قراءة الباركود")
-        st.metric("الباركود", best["value"])
-        st.caption(f"نوع الباركود: {best['type']}")
+        if not results:
+            st.error(
+                "لم أستطع قراءة الباركود من هذه الصورة."
+            )
+
+            st.markdown(
+                """
+                **جرّب هذه الشروط:**
+                - اجعل الباركود يملأ معظم الصورة.
+                - أبقِ الهاتف ثابتاً.
+                - اجعل الخطوط أفقية قدر الإمكان.
+                - لا تستخدم فلاشاً ينعكس على الملصق.
+                - تأكد أن الأطراف البيضاء للباركود ظاهرة.
+                """
+            )
+
+            return
+
+        best = barcode_matches_database(
+            results
+        )
+
+        st.success(
+            "✓ تم التعرف على الباركود"
+        )
+
+        st.metric(
+            "الباركود",
+            best["value"],
+        )
+
+        st.caption(
+            f"النوع: {best['type']}  •  "
+            f"طريقة القراءة: {best['attempt']}"
+        )
 
         matching = df[
             (df["0"] == best["value"])
@@ -776,21 +1035,31 @@ def camera_scanner_ui():
         ]
 
         if not matching.empty:
-            show_product(matching.iloc[0])
+            st.success(
+                "تم العثور على المنتج في المخزون."
+            )
+            show_product(
+                matching.iloc[0]
+            )
         else:
             st.warning(
-                "تمت قراءة الرقم، لكنه غير موجود في قاعدة البيانات."
+                "تمت قراءة الباركود، "
+                "لكن الرقم غير موجود في قاعدة البيانات."
             )
-            show_similar(best["value"])
+
+            show_similar(
+                best["value"]
+            )
 
         if len(results) > 1:
             with st.expander(
-                "قراءات أخرى من نفس الصورة"
+                "قراءات أخرى من الصورة"
             ):
-                for result in results[:5]:
+                for result in results[:8]:
                     st.write(
-                        f"{result['value']} — "
-                        f"{result['type']}"
+                        f"**{result['value']}** — "
+                        f"{result['type']} — "
+                        f"{result['attempt']}"
                     )
 
 
@@ -990,14 +1259,7 @@ with search_tab:
 # ============================================================
 
 
-with scanner_tab:
 
-    if not ZBAR_AVAILABLE:
-        st.error(
-            "محرك قراءة الباركود غير مثبت. "
-            "تأكد من وجود pyzbar في requirements.txt "
-            "و libzbar0 في packages.txt."
-        )
-        st.stop()
+with scanner_tab:
 
     camera_scanner_ui()
