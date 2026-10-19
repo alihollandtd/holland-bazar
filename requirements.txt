@@ -1,9 +1,8 @@
 streamlit>=1.56,<2
 pandas>=2.2
 openpyxl>=3.1
-requests>=2.32
-pycryptodome>=3.20
 Pillow>=10
 numpy>=2.0
 opencv-contrib-python-headless>=4.10
 zxing-cpp>=2.3
+async-mega-py
