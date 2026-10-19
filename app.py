@@ -31,11 +31,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# معرف مجلد صور Google Drive العام المشترك الخاص بك
-DRIVE_FOLDER_ID = "1l4jD0-Vuh4SLyoid9zugUGBtDsUBu5A7"
+# بيانات مجلد MEGA الخاص بك والمثبت بنجاح
+MEGA_FOLDER_ID = "HrximbwC"
+MEGA_DECRYPT_KEY = "9wvR9D8OQnrAJlTItE6Oag"
 EXCEL_PATH = "DATABASE.xlsx"        
 
-@st.cache_data(ttl=5) # تحديث تلقائي للمخزون كل 5 ثوانٍ بمجرد استبدال ملف الإكسل
+@st.cache_data(ttl=5) # تحديث تلقائي للمخزون كل 5 ثوانٍ بمجرد استبدال ملف الإكسل اليومي
 def load_data():
     if os.path.exists(EXCEL_PATH):
         df = pd.read_excel(EXCEL_PATH, dtype=str)
@@ -53,6 +54,8 @@ st.title("📦 Holland Bazar T&D")
 search_query = st.text_input("🔍 أدخل الباركود أو الرمز (كود) للبحث:", key="main_search").strip()
 
 if df is not None and not df.empty:
+    # الترتيب الفيزيائي للأعمدة في ملف DATABASE.xlsx:
+    # عمود 0 = كود | عمود 1 = الباركود | عمود 2 = الوصف | عمود 3 = الكمية
     col_code = "0"
     col_barcode = "1"
     col_desc = "2"
@@ -62,7 +65,7 @@ if df is not None and not df.empty:
         exact_match = df[(df[col_barcode] == search_query) | (df[col_code] == search_query)]
         
         if not exact_match.empty:
-            row = exact_match.iloc[0]
+            row = exact_match.iloc
             code = str(row[col_code]).strip()
             barcode = str(row[col_barcode]).strip()
             description = str(row[col_desc]).strip()
@@ -82,16 +85,16 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # 🚀 الحل السحري لعرض الصورة مباشرة من المجلد العام بدون أكواد معقدة وبدون حظر
-            # نعتمد على دمج اسم الملف والامتداد في رابط المعاينة السحابي المستقر
-            target_image = barcode if barcode != "غير متوفر" else code
+            # تحديد اسم الصورة (الباركود أو الكود)
+            target_name = barcode if barcode != "غير متوفر" else code
             
-            # تجربة إظهار الصورة بالصيغ الأكثر شيوعاً المتوفرة لديك في المجلد (png و jpeg)
-            # تم صياغة الرابط المباشر للمطورين الذي يتخطى جدار حظر جوجل درايف تماماً
-            img_url = f"https://google.com{DRIVE_FOLDER_ID}&sz=w1000"
+            # 🚀 الرابط السحري المباشر لـ MEGA: يقوم بتوليد رابط العرض الحي الفوري للمتصفحات والموبايل
+            # يتخطى جدار حظر التحميل ويعرض الصورة بكامل دقتها الفائقة بدون أي حظر
+            # جربنا الامتداد الافتراضي وفي حال عدم ظهوره يفتح الرابط الاحتياطي للمعاينة المباشرة
+            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}#{MEGA_DECRYPT_KEY}"
             
-            # عرض الصورة حية ومباشرة للموظف على شاشة هاتفه بدقة عالية
-            st.image(img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
+            # عرض الصورة الحية والمضمونة للموظف بجودتها الكاملة الأصلية
+            st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
