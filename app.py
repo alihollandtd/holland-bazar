@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 import os
-import tempfile
+import asyncio
 from pathlib import Path
 
-# MEGA library
-from mega import Mega
+from mega.client import MegaNzClient
 
 
 # ============================================================
@@ -24,61 +23,68 @@ st.set_page_config(
 # ============================================================
 
 st.markdown("""
-    <style>
+<style>
 
-    .stApp {
-        direction: rtl;
-        text-align: right;
-    }
+.stApp {
+    direction: rtl;
+    text-align: right;
+}
 
-    div.stButton > button:first-child {
-        background-color: #2e7d32;
-        color: white;
-        font-size: 18px;
-        width: 100%;
-    }
+div.stButton > button:first-child {
+    background-color: #2e7d32;
+    color: white;
+    font-size: 18px;
+    width: 100%;
+}
 
-    .metric-box {
-        padding: 20px;
-        background-color: #1e293b;
-        border: 2px solid #334155;
-        border-radius: 12px;
-        margin-bottom: 15px;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-    }
+.metric-box {
+    padding: 20px;
+    background-color: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+}
 
-    .metric-box h3 {
-        color: #f8fafc !important;
-        font-size: 22px;
-        margin-bottom: 10px;
-        line-height: 1.5;
-    }
+.metric-box h3 {
+    color: #f8fafc !important;
+    font-size: 22px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
 
-    .metric-box p {
-        color: #cbd5e1 !important;
-        font-size: 16px;
-        margin: 5px 0;
-    }
+.metric-box p {
+    color: #cbd5e1 !important;
+    font-size: 16px;
+    margin: 5px 0;
+}
 
-    .metric-box h2 {
-        color: #4ade80 !important;
-        font-size: 26px;
-        margin-top: 15px;
-        line-height: 1.5;
-    }
+.metric-box h2 {
+    color: #4ade80 !important;
+    font-size: 26px;
+    margin-top: 15px;
+    line-height: 1.5;
+}
 
-    .metric-box hr {
-        border-color: #475569;
-    }
+.metric-box hr {
+    border-color: #475569;
+}
 
-    .suggestion-box {
-        padding: 10px 15px;
-        background-color: #334155;
-        border-radius: 8px;
-        margin-top: 5px;
-    }
+.suggestion-box {
+    padding: 10px 15px;
+    background-color: #334155;
+    border-radius: 8px;
+    margin-top: 5px;
+}
 
-    </style>
+.image-status {
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #1e293b;
+    margin-bottom: 10px;
+}
+
+</style>
 """, unsafe_allow_html=True)
 
 
@@ -86,23 +92,30 @@ st.markdown("""
 # SETTINGS
 # ============================================================
 
-MEGA_FOLDER_ID = "HrximbwC"
-MEGA_DECRYPT_KEY = "9wvR9D8OQnrAJlTItE6Oag"
+# Your public MEGA folder
+MEGA_FOLDER_URL = (
+    "https://mega.nz/folder/"
+    "HrximbwC#9wvR9D8OQnrAJlTItE6Oag"
+)
 
 EXCEL_PATH = "DATABASE.xlsx"
 
+# Local temporary/cache directory
 IMAGE_CACHE_DIR = Path("image_cache")
 IMAGE_CACHE_DIR.mkdir(exist_ok=True)
 
 
 # ============================================================
-# LOAD EXCEL
+# LOAD DATABASE
 # ============================================================
 
 @st.cache_data(ttl=5)
 def load_data():
 
-    if os.path.exists(EXCEL_PATH):
+    if not os.path.exists(EXCEL_PATH):
+        return None
+
+    try:
 
         df = pd.read_excel(
             EXCEL_PATH,
@@ -118,183 +131,180 @@ def load_data():
 
             df[col] = (
                 df[col]
+                .fillna("")
                 .astype(str)
                 .str.strip()
             )
 
         return df
 
-    return None
+    except Exception as e:
+
+        st.error(
+            f"حدث خطأ أثناء قراءة DATABASE.xlsx: {e}"
+        )
+
+        return None
 
 
 df = load_data()
 
 
 # ============================================================
-# MEGA CONNECTION
+# MEGA IMAGE DOWNLOADER
 # ============================================================
 
-@st.cache_resource
-def get_mega():
-
-    try:
-
-        mega = Mega()
-
-        # Anonymous connection.
-        # This works with public MEGA files/folders.
-        m = mega.login()
-
-        return m
-
-    except Exception as e:
-
-        st.error(
-            f"خطأ في الاتصال بخدمة MEGA: {e}"
-        )
-
-        return None
-
-
-# ============================================================
-# FIND IMAGE IN MEGA
-# ============================================================
-
-def get_image_from_mega(target_name):
+async def download_image_from_mega_async(target_name):
 
     """
-    Finds an image with the requested filename
-    inside the public MEGA folder.
-
-    Expected filename examples:
-
-        123456.png
-        123456.jpg
-        123456.jpeg
-
-    The function downloads ONLY the matching
-    image instead of downloading the entire
-    MEGA folder.
+    Connects to the public MEGA folder,
+    finds the image whose filename matches
+    the barcode/code, and downloads ONLY that image.
     """
+
+    target_name = str(target_name).strip()
 
     if not target_name:
         return None
 
-    target_name = str(target_name).strip()
-
-    possible_names = [
-        f"{target_name}.png",
-        f"{target_name}.jpg",
-        f"{target_name}.jpeg",
-        f"{target_name}.webp",
-    ]
-
-    # --------------------------------------------------------
-    # LOCAL CACHE FIRST
-    # --------------------------------------------------------
-
-    for filename in possible_names:
-
-        cached_file = IMAGE_CACHE_DIR / filename
-
-        if cached_file.exists():
-            return str(cached_file)
+    # Possible image names
+    possible_names = {
+        f"{target_name}.png".casefold(),
+        f"{target_name}.jpg".casefold(),
+        f"{target_name}.jpeg".casefold(),
+        f"{target_name}.webp".casefold(),
+    }
 
     # --------------------------------------------------------
-    # MEGA URL
+    # Connect to public MEGA folder
     # --------------------------------------------------------
 
-    mega_folder_url = (
-        f"https://mega.nz/folder/"
-        f"{MEGA_FOLDER_ID}#"
-        f"{MEGA_DECRYPT_KEY}"
-    )
+    async with MegaNzClient() as mega:
 
-    try:
+        public_handle, public_key, selected_node = (
+            mega.parse_folder_url(
+                MEGA_FOLDER_URL
+            )
+        )
 
-        m = get_mega()
+        # ----------------------------------------------------
+        # Read the folder structure
+        # ----------------------------------------------------
 
-        if m is None:
+        filesystem = await mega.get_public_filesystem(
+            public_handle,
+            public_key
+        )
+
+        # ----------------------------------------------------
+        # Find matching image
+        # ----------------------------------------------------
+
+        matching_node = None
+
+        for node in filesystem.files:
+
+            filename = (
+                node.attributes.name
+                or ""
+            ).strip()
+
+            if filename.casefold() in possible_names:
+
+                matching_node = node
+                break
+
+        if matching_node is None:
             return None
 
         # ----------------------------------------------------
-        # NOTE:
-        #
-        # mega.py versions differ in their public-folder
-        # support.
-        #
-        # We try to use the public folder filesystem first.
+        # Local filename
         # ----------------------------------------------------
 
-        if hasattr(m, "get_public_folder"):
-
-            files = m.get_public_folder(
-                mega_folder_url
-            )
-
-            if files:
-
-                for file_item in files:
-
-                    try:
-
-                        filename = (
-                            file_item.get("name")
-                            or file_item.get("a", {}).get("n")
-                            or ""
-                        )
-
-                        if filename.lower() in [
-                            x.lower()
-                            for x in possible_names
-                        ]:
-
-                            destination = (
-                                IMAGE_CACHE_DIR /
-                                filename
-                            )
-
-                            m.download(
-                                file_item,
-                                str(IMAGE_CACHE_DIR)
-                            )
-
-                            if destination.exists():
-                                return str(destination)
-
-                    except Exception:
-                        continue
-
-        # ----------------------------------------------------
-        # FALLBACK
-        # ----------------------------------------------------
-
-        st.warning(
-            "تم العثور على مجلد MEGA، لكن إصدار مكتبة "
-            "mega.py الحالي لا يدعم قراءة المجلد العام "
-            "بالطريقة المطلوبة."
+        filename = (
+            matching_node.attributes.name
         )
 
-        return None
-
-    except Exception as e:
-
-        st.warning(
-            f"تعذر تحميل صورة المنتج: {e}"
+        output_path = (
+            IMAGE_CACHE_DIR /
+            filename
         )
+
+        # ----------------------------------------------------
+        # Use cached image if it already exists
+        # ----------------------------------------------------
+
+        if output_path.exists():
+
+            return str(output_path)
+
+        # ----------------------------------------------------
+        # Get encrypted file information
+        # ----------------------------------------------------
+
+        file_info = await mega._core.request_file_info(
+            matching_node.id,
+            public_handle
+        )
+
+        # ----------------------------------------------------
+        # Download and decrypt the image
+        # ----------------------------------------------------
+
+        await mega._core.download_file(
+            file_info,
+            matching_node._crypto,
+            output_path
+        )
+
+        # ----------------------------------------------------
+        # Verify download
+        # ----------------------------------------------------
+
+        if output_path.exists():
+
+            return str(output_path)
 
         return None
 
 
 # ============================================================
-# PAGE
+# SAFE SYNC WRAPPER
+# ============================================================
+
+@st.cache_data(
+    ttl=3600,
+    show_spinner=False
+)
+def get_product_image(target_name):
+
+    """
+    Streamlit-compatible wrapper around the
+    asynchronous MEGA downloader.
+    """
+
+    try:
+
+        return asyncio.run(
+            download_image_from_mega_async(
+                target_name
+            )
+        )
+
+    except Exception as e:
+
+        return f"ERROR:{e}"
+
+
+# ============================================================
+# HEADER
 # ============================================================
 
 st.title("📦 Holland Bazar T&D")
 
 
 # ============================================================
-# SEARCH
+# SEARCH BOX
 # ============================================================
 
 search_query = st.text_input(
@@ -304,223 +314,319 @@ search_query = st.text_input(
 
 
 # ============================================================
-# INVENTORY SEARCH
+# DATABASE CHECK
 # ============================================================
 
-if df is not None and not df.empty:
+if df is None:
 
-    col_code = "0"
-    col_barcode = "1"
-    col_desc = "2"
-    col_qty = "3"
+    st.error(
+        "❌ لم يتم العثور على DATABASE.xlsx"
+    )
+
+    st.stop()
 
 
-    if search_query:
+if df.empty:
 
-        exact_match = df[
-            (df[col_barcode] == search_query) |
-            (df[col_code] == search_query)
-        ]
+    st.error(
+        "❌ ملف DATABASE.xlsx فارغ."
+    )
+
+    st.stop()
+
+
+# ============================================================
+# COLUMN DEFINITIONS
+# ============================================================
+
+col_code = "0"
+col_barcode = "1"
+col_desc = "2"
+col_qty = "3"
+
+
+# ============================================================
+# SEARCH
+# ============================================================
+
+if search_query:
+
+    exact_match = df[
+        (df[col_barcode] == search_query)
+        |
+        (df[col_code] == search_query)
+    ]
+
+
+    # ========================================================
+    # EXACT MATCH
+    # ========================================================
+
+    if not exact_match.empty:
+
+        matched_row = exact_match.iloc[0]
+
+        code = str(
+            matched_row[col_code]
+        ).strip()
+
+        barcode = str(
+            matched_row[col_barcode]
+        ).strip()
+
+        description = str(
+            matched_row[col_desc]
+        ).strip()
+
+        quantity = str(
+            matched_row[col_qty]
+        ).strip()
+
+
+        # ----------------------------------------------------
+        # Clean barcode
+        # ----------------------------------------------------
+
+        if (
+            barcode.lower() == "nan"
+            or barcode == ""
+        ):
+
+            barcode = "غير متوفر"
+
+
+        # ----------------------------------------------------
+        # Clean quantity
+        # ----------------------------------------------------
+
+        if (
+            quantity.lower() == "nan"
+            or quantity == ""
+        ):
+
+            quantity = "0"
 
 
         # ====================================================
-        # EXACT MATCH
+        # PRODUCT INFORMATION CARD
         # ====================================================
 
-        if not exact_match.empty:
+        st.markdown(
+            f"""
+            <div class="metric-box">
 
-            matched_row = exact_match.iloc[0]
+                <h3>
+                    📝 الوصف: {description}
+                </h3>
 
-            code = str(
-                matched_row[col_code]
-            ).strip()
+                <p>
+                    <b>كود المنتج:</b> {code}
+                </p>
 
-            barcode = str(
-                matched_row[col_barcode]
-            ).strip()
+                <p>
+                    <b>الباركود:</b> {barcode}
+                </p>
 
-            description = str(
-                matched_row[col_desc]
-            ).strip()
+                <hr>
 
-            quantity = str(
-                matched_row[col_qty]
-            ).strip()
+                <h2>
+                    📊 الكمية في السستم: {quantity}
+                </h2>
 
-
-            # ------------------------------------------------
-            # CLEAN VALUES
-            # ------------------------------------------------
-
-            if (
-                barcode.lower() == "nan"
-                or barcode == ""
-            ):
-                barcode = "غير متوفر"
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 
-            if (
-                quantity.lower() == "nan"
-                or quantity == ""
-            ):
-                quantity = "0"
+        # ====================================================
+        # IMAGE
+        # ====================================================
+
+        st.markdown(
+            "### 📷 صورة المنتج"
+        )
 
 
-            # =================================================
-            # PRODUCT INFORMATION
-            # =================================================
-
-            st.markdown(
-                f"""
-                <div class="metric-box">
-
-                    <h3>
-                        📝 الوصف: {description}
-                    </h3>
-
-                    <p>
-                        <b>كود المنتج:</b> {code}
-                    </p>
-
-                    <p>
-                        <b>الباركود:</b> {barcode}
-                    </p>
-
-                    <hr>
-
-                    <h2>
-                        📊 الكمية في السستم: {quantity}
-                    </h2>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        # Use barcode when available.
+        # Otherwise use product code.
+        target_name = (
+            barcode
+            if barcode != "غير متوفر"
+            else code
+        )
 
 
-            # =================================================
-            # IMAGE SEARCH
-            # =================================================
+        # ----------------------------------------------------
+        # Download image
+        # ----------------------------------------------------
 
-            target_name = (
-                barcode
-                if barcode != "غير متوفر"
-                else code
-            )
+        with st.spinner(
+            "جاري البحث عن صورة المنتج..."
+        ):
 
-
-            st.markdown(
-                "### 📷 صورة المنتج"
-            )
-
-
-            # -------------------------------------------------
-            # FIND IMAGE
-            # -------------------------------------------------
-
-            image_path = get_image_from_mega(
+            image_result = get_product_image(
                 target_name
             )
 
 
-            # -------------------------------------------------
-            # DISPLAY IMAGE
-            # -------------------------------------------------
+        # ====================================================
+        # IMAGE FOUND
+        # ====================================================
 
-            if image_path:
+        if (
+            image_result
+            and not str(image_result).startswith("ERROR:")
+        ):
 
-                st.image(
-                    image_path,
-                    caption=(
-                        f"الصورة الأصلية للمنتج: {code}"
-                    ),
-                    use_container_width=True
-                )
-
-            else:
-
-                st.info(
-                    f"📷 لم يتم العثور على صورة باسم "
-                    f"`{target_name}.png` أو JPG/JPEG/WEBP "
-                    f"داخل مجلد الصور."
-                )
+            st.image(
+                image_result,
+                caption=(
+                    f"📷 الصورة الأصلية للمنتج: {code}"
+                ),
+                use_container_width=True
+            )
 
 
         # ====================================================
-        # NO EXACT MATCH
+        # IMAGE NOT FOUND
+        # ====================================================
+
+        elif image_result is None:
+
+            st.info(
+                f"""
+                📷 لا توجد صورة لهذا المنتج.
+
+                اسم الصورة المطلوب:
+                `{target_name}.png`
+
+                أو:
+
+                `{target_name}.jpg`
+                """
+            )
+
+
+        # ====================================================
+        # IMAGE ERROR
         # ====================================================
 
         else:
 
-            st.error(
-                f"❌ لم يتم العثور على تطابق كامل "
-                f"للرمز المكتوب: ({search_query})"
+            error_message = str(
+                image_result
+            ).replace(
+                "ERROR:",
+                ""
+            )
+
+            st.warning(
+                f"""
+                ⚠️ تعذر تحميل صورة المنتج.
+
+                الخطأ:
+                `{error_message}`
+                """
             )
 
 
-            similar_matches = df[
-                df[col_code].str.contains(
-                    search_query,
-                    na=False,
-                    case=False
-                )
-                |
-                df[col_barcode].str.contains(
-                    search_query,
-                    na=False,
-                    case=False
-                )
-            ]
+    # ========================================================
+    # NO EXACT MATCH
+    # ========================================================
+
+    else:
+
+        st.error(
+            f"""
+            ❌ لم يتم العثور على تطابق كامل
+            للرمز المكتوب: ({search_query})
+            """
+        )
 
 
-            if not similar_matches.empty:
+        # ----------------------------------------------------
+        # Similar results
+        # ----------------------------------------------------
+
+        similar_matches = df[
+            df[col_code].str.contains(
+                search_query,
+                na=False,
+                case=False,
+                regex=False
+            )
+            |
+            df[col_barcode].str.contains(
+                search_query,
+                na=False,
+                case=False,
+                regex=False
+            )
+        ]
+
+
+        if not similar_matches.empty:
+
+            st.markdown(
+                "### 💡 هل تقصد أحد هذه الرموز القريبة؟"
+            )
+
+
+            for _, row in similar_matches.head(5).iterrows():
+
+                sim_code = row[col_code]
+
+                sim_desc = row[col_desc]
+
 
                 st.markdown(
-                    "### 💡 هل تقصد أحد هذه الرموز القريبة؟"
+                    f"""
+                    <div class="suggestion-box">
+
+                        <p style="
+                            color:#4ade80;
+                            font-weight:bold;
+                            margin:0;
+                        ">
+                            كود المنتج المقترح:
+                            {sim_code}
+                        </p>
+
+                        <p style="
+                            color:#f1f5f9;
+                            margin:2px 0;
+                        ">
+                            📝 الوصف:
+                            {sim_desc}
+                        </p>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
-
-
-                for idx, row in similar_matches.head(5).iterrows():
-
-                    sim_code = row[col_code]
-
-                    sim_desc = row[col_desc]
-
-
-                    st.markdown(
-                        f"""
-                        <div class="suggestion-box">
-
-                            <p style="
-                                color:#4ade80;
-                                font-weight:bold;
-                                margin:0;
-                            ">
-                                كود المنتج المقترح:
-                                {sim_code}
-                            </p>
-
-                            <p style="
-                                color:#f1f5f9;
-                                margin:2px 0;
-                            ">
-                                📝 الوصف:
-                                {sim_desc}
-                            </p>
-
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
 
 
 # ============================================================
-# DATABASE MISSING
+# INITIAL STATE
 # ============================================================
 
 else:
 
-    st.error(
-        "تأكد من وجود ملف DATABASE.xlsx "
-        "في مستودع GitHub الخاص بك بجوار ملف app.py."
+    st.markdown(
+        """
+        <div class="metric-box">
+
+            <h3>
+                🔎 ابحث عن منتج
+            </h3>
+
+            <p>
+                أدخل الباركود أو كود المنتج
+                لعرض معلومات المخزون والصورة.
+            </p>
+
+        </div>
+        """,
+        unsafe_allow_html=True
     )
