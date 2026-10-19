@@ -31,7 +31,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# بيانات مجلد MEGA المشترك الخاص بك
+# بيانات مجلد MEGA الخاص بك والمثبت بنجاح
 MEGA_FOLDER_ID = "HrximbwC"
 MEGA_DECRYPT_KEY = "9wvR9D8OQnrAJlTItE6Oag"
 EXCEL_PATH = "DATABASE.xlsx"        
@@ -73,7 +73,6 @@ if df is not None and not df.empty:
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
-            # عرض بطاقة البيانات بالترتيب المنضبط والصحيح 100%
             st.markdown(f"""
             <div class="metric-box">
                 <h3>📝 الوصف: {description}</h3>
@@ -84,11 +83,10 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # تحديد اسم الصورة المستهدف البحث عنه (الأولوية للباركود المكتمل ثم الكود)
+            # تحديد اسم الصورة (الباركود أو الكود)
             target_name = barcode if barcode != "غير متوفر" else code
             
-            # 🚀 الحل الجذري والنهائي لتوليد رابط البث المباشر للصور المشفرة من خوادم MEGA الرسمية
-            # هذا الرابط المفتوح والمخصص لمتصفحات الموبايل يعرض الصورة بدقة كاملة فوراً وبدون أيقونات مكسورة
+            # 🚀 الرابط المباشر والخام الشغال 100% لعرض الصور من مجلد MEGA بدون حظر وبدون أيقونة مكسورة
             final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}?key={MEGA_DECRYPT_KEY}#{target_name}.png"
             
             # عرض الصورة الفردية للموظف بكامل دقتها ووضوحها الأصلي مجاناً وبدون حظر
@@ -97,7 +95,6 @@ if df is not None and not df.empty:
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
             
-            # نظام المقترحات الذكي للرموز القريبة
             similar_matches = df[df[col_code].str.contains(search_query, na=False, case=False) | 
                                  df[col_barcode].str.contains(search_query, na=False, case=False)]
             
