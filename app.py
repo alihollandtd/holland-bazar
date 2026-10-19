@@ -3,6 +3,8 @@ import re
 import json
 import struct
 import base64
+import time
+import queue
 from io import BytesIO
 
 import requests
@@ -10,14 +12,23 @@ import pandas as pd
 import streamlit as st
 
 from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+
+import cv2
+import numpy as np
+import zxingcpp
+import av
+
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
 
-import zxingcpp
+from streamlit_webrtc import (
+    WebRtcMode,
+    webrtc_streamer,
+)
 
 
 # ============================================================
-# PAGE CONFIG
+# PAGE
 # ============================================================
 
 st.set_page_config(
@@ -43,249 +54,25 @@ MEGA_API = "https://g.api.mega.co.nz/cs"
 
 
 # ============================================================
-# CUSTOM CSS
+# SIMPLE GLOBAL STYLING
+#
+# IMPORTANT:
+# No HTML cards are used below.
+# Streamlit native containers/cards do the UI.
 # ============================================================
 
 st.markdown(
     """
     <style>
 
-    /* =====================================================
-       GLOBAL
-       ===================================================== */
-
-    .stApp {
-        background:
-            radial-gradient(
-                circle at top right,
-                rgba(46, 125, 50, 0.08),
-                transparent 30%
-            ),
-            #0b0f14;
-
-        color: #f8fafc;
-    }
-
     .block-container {
-        max-width: 1100px;
+        max-width: 1180px;
         padding-top: 2rem;
         padding-bottom: 4rem;
     }
 
-    /* =====================================================
-       HEADER
-       ===================================================== */
-
-    .app-header {
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }
-
-    .app-title {
-        font-size: clamp(26px, 4vw, 42px);
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        margin-bottom: 5px;
-    }
-
-    .app-subtitle {
-        color: #94a3b8;
-        font-size: 14px;
-    }
-
-    /* =====================================================
-       SEARCH
-       ===================================================== */
-
-    .search-label {
-        text-align: right;
-        font-size: 14px;
-        font-weight: 700;
-        margin-bottom: 5px;
-    }
-
-    /* =====================================================
-       CAMERA CARD
-       ===================================================== */
-
-    .camera-card {
-        background: #111827;
-        border: 1px solid #263244;
-        border-radius: 18px;
-        padding: 18px;
-        margin-bottom: 20px;
-    }
-
-    .camera-title {
-        font-size: 18px;
-        font-weight: 800;
-        margin-bottom: 5px;
-    }
-
-    .camera-description {
-        color: #94a3b8;
-        font-size: 13px;
-        margin-bottom: 12px;
-    }
-
-    /* =====================================================
-       PRODUCT CARD
-       ===================================================== */
-
-    .product-card {
-        background: #111827;
-        border: 1px solid #263244;
-        border-radius: 20px;
-        padding: 24px;
-        margin-top: 20px;
-        margin-bottom: 18px;
-    }
-
-    .product-heading {
-        font-size: 25px;
-        font-weight: 800;
-        margin-bottom: 22px;
-        line-height: 1.4;
-    }
-
-    .info-card {
-        background: #182131;
-        border: 1px solid #29374a;
-        border-radius: 14px;
-        padding: 16px;
-        height: 100%;
-    }
-
-    .info-label {
-        color: #94a3b8;
-        font-size: 12px;
-        margin-bottom: 7px;
-    }
-
-    .info-value {
-        color: #f8fafc;
-        font-size: 17px;
-        font-weight: 700;
-        word-break: break-word;
-    }
-
-    /* =====================================================
-       QUANTITY
-       ===================================================== */
-
-    .quantity-card {
-        background:
-            linear-gradient(
-                135deg,
-                #14532d,
-                #166534
-            );
-
-        border: 1px solid #22c55e;
-        border-radius: 18px;
-        padding: 20px;
-        text-align: center;
-        margin-top: 18px;
-    }
-
-    .quantity-number {
-        font-size: clamp(34px, 5vw, 48px);
-        font-weight: 900;
-        line-height: 1;
-    }
-
-    .quantity-label {
-        margin-top: 8px;
-        color: #bbf7d0;
-        font-size: 13px;
-    }
-
-    /* =====================================================
-       IMAGE
-       ===================================================== */
-
-    .image-card {
-        background: #111827;
-        border: 1px solid #263244;
-        border-radius: 20px;
-        padding: 20px;
-        margin-top: 20px;
-    }
-
-    .section-title {
-        font-size: 20px;
-        font-weight: 800;
-        margin-bottom: 12px;
-    }
-
-    .image-name {
-        color: #64748b;
-        text-align: center;
-        font-size: 12px;
-        margin-top: 8px;
-    }
-
-    /* =====================================================
-       CAMERA RESULT
-       ===================================================== */
-
-    .scan-success {
-        background: #052e16;
-        border: 1px solid #166534;
-        border-radius: 12px;
-        padding: 12px 15px;
-        margin: 10px 0 15px 0;
-        text-align: center;
-        color: #bbf7d0;
-        font-weight: 700;
-    }
-
-    /* =====================================================
-       SUGGESTIONS
-       ===================================================== */
-
-    .suggestion-card {
-        background: #111827;
-        border: 1px solid #263244;
-        border-radius: 14px;
-        padding: 14px 16px;
-        margin: 8px 0;
-    }
-
-    .suggestion-title {
-        font-weight: 700;
-        font-size: 15px;
-    }
-
-    .suggestion-details {
-        color: #94a3b8;
-        font-size: 12px;
-        margin-top: 5px;
-    }
-
-    /* =====================================================
-       MOBILE
-       ===================================================== */
-
-    @media (max-width: 700px) {
-
-        .block-container {
-            padding-left: 0.8rem;
-            padding-right: 0.8rem;
-            padding-top: 1rem;
-        }
-
-        .product-card,
-        .image-card,
-        .camera-card {
-            padding: 15px;
-            border-radius: 15px;
-        }
-
-        .product-heading {
-            font-size: 21px;
-        }
-
+    [data-testid="stMetricValue"] {
+        font-size: 2rem;
     }
 
     </style>
@@ -350,15 +137,6 @@ def mega_b64_decode(value):
     value += b"=" * (-len(value) % 4)
 
     return base64.urlsafe_b64decode(value)
-
-
-def mega_b64_encode(value):
-
-    return (
-        base64.urlsafe_b64encode(value)
-        .decode("utf-8")
-        .rstrip("=")
-    )
 
 
 def base64_to_a32(value):
@@ -452,10 +230,10 @@ def decrypt_attributes(
             "Invalid MEGA attribute prefix"
         )
 
-    json_data = decrypted[4:]
-
     return json.loads(
-        json_data.decode("utf-8")
+        decrypted[4:].decode(
+            "utf-8"
+        )
     )
 
 
@@ -546,7 +324,7 @@ def mega_api_request(
 
 
 # ============================================================
-# GET MEGA NODES
+# MEGA FILE INDEX
 # ============================================================
 
 @st.cache_data(
@@ -670,6 +448,7 @@ def get_mega_nodes():
             )
 
         except Exception:
+
             continue
 
     return result
@@ -707,7 +486,7 @@ def find_mega_image(
             value.lower()
         )
 
-    extensions = (
+    image_extensions = (
         ".png",
         ".jpg",
         ".jpeg",
@@ -720,11 +499,11 @@ def find_mega_image(
         for node in nodes
         if node["type"] == 0
         and node["name"].lower().endswith(
-            extensions
+            image_extensions
         )
     ]
 
-    # Exact match first
+    # Exact filename
     for identifier in identifiers:
 
         for node in files:
@@ -737,7 +516,7 @@ def find_mega_image(
 
                 return node
 
-    # Partial match second
+    # Filename contains barcode/code
     for identifier in identifiers:
 
         for node in files:
@@ -856,396 +635,570 @@ def download_mega_image(
 
 
 # ============================================================
-# BARCODE SCANNER
+# BARCODE DECODER
 # ============================================================
 
-def decode_barcode(image_bytes):
-
-    """
-    Decode barcodes from the camera image.
-
-    ZXing supports EAN, UPC, Code 128 and many
-    other retail/industrial barcode formats.
-    """
-
-    try:
-
-        image = Image.open(
-            BytesIO(image_bytes)
-        ).convert("RGB")
-
-    except Exception:
-
-        return []
-
-
-    # --------------------------------------------------------
-    # Images to test
-    # --------------------------------------------------------
-
-    variants = []
-
-    # Original
-    variants.append(image)
-
-    # Upscaled
-    width, height = image.size
-
-    if width < 1600:
-
-        scale = 1600 / width
-
-        enlarged = image.resize(
-            (
-                int(width * scale),
-                int(height * scale),
-            ),
-            Image.Resampling.LANCZOS,
-        )
-
-        variants.append(enlarged)
-
-    else:
-
-        enlarged = image
-
-    # Grayscale
-    gray = ImageOps.grayscale(
-        enlarged
-    )
-
-    variants.append(gray)
-
-    # Contrast
-    contrast = ImageEnhance.Contrast(
-        gray
-    ).enhance(1.8)
-
-    variants.append(contrast)
-
-    # Sharpen
-    sharpened = contrast.filter(
-        ImageFilter.SHARPEN
-    )
-
-    variants.append(sharpened)
-
-    # Rotations
-    variants.append(
-        enlarged.rotate(
-            90,
-            expand=True,
-        )
-    )
-
-    variants.append(
-        enlarged.rotate(
-            270,
-            expand=True,
-        )
-    )
-
-
-    # --------------------------------------------------------
-    # Decode
-    # --------------------------------------------------------
-
-    found = []
-
-    seen = set()
-
-    for variant in variants:
-
-        try:
-
-            results = zxingcpp.read_barcodes(
-                variant,
-                try_rotate=True,
-                try_downscale=True,
-                try_invert=True,
-            )
-
-        except Exception:
-
-            continue
-
-        for result in results:
-
-            value = str(
-                result.text
-            ).strip()
-
-            if not value:
-                continue
-
-            if value in seen:
-                continue
-
-            seen.add(value)
-
-            found.append(
-                {
-                    "text": value,
-                    "format": str(
-                        result.format
-                    ),
-                }
-            )
-
-    return found
-
-
-# ============================================================
-# IMAGE DISPLAY
-# ============================================================
-
-def display_product_image(
-    image_bytes,
-    filename,
+def decode_barcode_frame(
+    frame_bgr
 ):
 
+    """
+    Try several intelligently selected versions of the
+    camera frame.
+
+    This is deliberately more aggressive than the previous
+    snapshot-only scanner.
+    """
+
+    if frame_bgr is None:
+        return None
+
     try:
 
-        image = Image.open(
-            BytesIO(image_bytes)
-        )
+        frame = frame_bgr.copy()
 
-        # Keep the image's proportions.
-        # Limit giant portrait images so they don't
-        # take over the entire page.
+        height, width = frame.shape[:2]
 
-        max_height = 720
+        # ----------------------------------------------------
+        # Resize to a useful processing size.
+        # ----------------------------------------------------
 
-        width, height = image.size
+        target_width = 1400
 
-        if height > max_height:
+        if width > target_width:
 
-            ratio = (
-                max_height
-                / height
+            scale = (
+                target_width / width
             )
 
-            image = image.resize(
-                (
-                    int(width * ratio),
-                    max_height,
-                ),
-                Image.Resampling.LANCZOS,
+            frame = cv2.resize(
+                frame,
+                None,
+                fx=scale,
+                fy=scale,
+                interpolation=cv2.INTER_CUBIC,
             )
 
-        st.image(
-            image,
-            width="stretch",
+        height, width = frame.shape[:2]
+
+        # ----------------------------------------------------
+        # Candidate images.
+        # ----------------------------------------------------
+
+        candidates = []
+
+        # Full image
+        candidates.append(frame)
+
+        # Central region
+        x1 = int(width * 0.05)
+        x2 = int(width * 0.95)
+
+        y1 = int(height * 0.10)
+        y2 = int(height * 0.90)
+
+        candidates.append(
+            frame[y1:y2, x1:x2]
         )
 
-        st.markdown(
-            f'<div class="image-name">'
-            f'{filename}'
-            f'</div>',
-            unsafe_allow_html=True,
+        # Central horizontal scanning area
+        y1 = int(height * 0.25)
+        y2 = int(height * 0.75)
+
+        candidates.append(
+            frame[y1:y2, :]
         )
+
+        # ----------------------------------------------------
+        # Process each candidate.
+        # ----------------------------------------------------
+
+        for image in candidates:
+
+            if image is None:
+                continue
+
+            if image.size == 0:
+                continue
+
+            # Original
+            versions = [
+                image
+            ]
+
+            # Grayscale
+            gray = cv2.cvtColor(
+                image,
+                cv2.COLOR_BGR2GRAY,
+            )
+
+            versions.append(gray)
+
+            # CLAHE
+            clahe = cv2.createCLAHE(
+                clipLimit=2.0,
+                tileGridSize=(8, 8),
+            )
+
+            enhanced = clahe.apply(
+                gray
+            )
+
+            versions.append(
+                enhanced
+            )
+
+            # OTSU threshold
+            _, threshold = cv2.threshold(
+                enhanced,
+                0,
+                255,
+                cv2.THRESH_BINARY
+                + cv2.THRESH_OTSU,
+            )
+
+            versions.append(
+                threshold
+            )
+
+            # ------------------------------------------------
+            # Decode
+            # ------------------------------------------------
+
+            for version in versions:
+
+                try:
+
+                    results = (
+                        zxingcpp.read_barcodes(
+                            version,
+                            try_rotate=True,
+                            try_downscale=False,
+                            try_invert=True,
+                        )
+                    )
+
+                except Exception:
+
+                    continue
+
+                for result in results:
+
+                    if not result.valid:
+                        continue
+
+                    value = str(
+                        result.text
+                    ).strip()
+
+                    if not value:
+                        continue
+
+                    # Remove accidental whitespace
+                    value = re.sub(
+                        r"\s+",
+                        "",
+                        value,
+                    )
+
+                    return {
+                        "text": value,
+                        "format": str(
+                            result.format
+                        ),
+                    }
+
+        return None
 
     except Exception:
 
-        st.image(
-            image_bytes,
-            width="stretch",
-        )
+        return None
 
 
 # ============================================================
-# HEADER
+# LIVE CAMERA SCANNER
 # ============================================================
 
-st.markdown(
-    """
-    <div class="app-header">
+def render_live_scanner():
 
-        <div class="app-title">
-            📦 Holland Bazar T&D
-        </div>
-
-        <div class="app-subtitle">
-            نظام البحث عن المنتجات والمخزون
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-# ============================================================
-# LOAD DATABASE
-# ============================================================
-
-df = load_data()
-
-if df is None:
-
-    st.error(
-        "❌ ملف DATABASE.xlsx غير موجود."
+    st.subheader(
+        "📷 مسح الباركود"
     )
 
-    st.stop()
-
-
-if df.empty:
-
-    st.error(
-        "❌ ملف DATABASE.xlsx فارغ."
+    st.caption(
+        "وجّه الكاميرا نحو الباركود. "
+        "عند التعرف عليه سيتم فتح المنتج تلقائياً."
     )
 
-    st.stop()
-
-
-# ============================================================
-# CAMERA SCANNER
-# ============================================================
-
-st.markdown(
-    """
-    <div class="camera-card">
-
-        <div class="camera-title">
-            📷 مسح الباركود بالكاميرا
-        </div>
-
-        <div class="camera-description">
-            وجّه الكاميرا نحو الباركود ثم التقط صورة.
-            سيقرأ النظام الباركود ويبحث عن المنتج تلقائياً.
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-camera_image = st.camera_input(
-    "📷 التقاط الباركود",
-    key="barcode_camera",
-)
-
-
-# ============================================================
-# CAMERA PROCESSING
-# ============================================================
-
-if camera_image is not None:
-
-    scanned = decode_barcode(
-        camera_image.getvalue()
-    )
-
-    if scanned:
-
-        # Use the first detected barcode
-        detected_value = scanned[0]["text"]
+    if "scanner_enabled" not in st.session_state:
 
         st.session_state[
-            "camera_barcode"
-        ] = detected_value
+            "scanner_enabled"
+        ] = False
 
-        st.markdown(
-            f"""
-            <div class="scan-success">
-                ✅ تم قراءة الباركود:
-                <br>
-                <strong>{detected_value}</strong>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    if "scanned_barcode" not in st.session_state:
 
-    else:
-
-        st.warning(
-            "⚠️ لم يتم التعرف على الباركود. "
-            "حاول تقريب الكاميرا، تحسين الإضاءة، "
-            "وجعل الخطوط السوداء للباركود واضحة."
-        )
+        st.session_state[
+            "scanned_barcode"
+        ] = ""
 
 
-# ============================================================
-# SEARCH VALUE
-# ============================================================
-
-camera_value = st.session_state.get(
-    "camera_barcode",
-    "",
-)
-
-
-search_query = st.text_input(
-    "🔎 الباركود أو الكود",
-    value=camera_value,
-    key="main_search",
-    placeholder="مثال: 6932308668058",
-)
-
-
-search_query = search_query.strip()
-
-
-# ============================================================
-# CLEAR SCAN
-# ============================================================
-
-if camera_value:
-
-    if st.button(
-        "🧹 مسح البحث والبدء من جديد",
-        use_container_width=True,
-    ):
-
-        st.session_state.pop(
-            "camera_barcode",
-            None,
-        )
-
-        st.rerun()
-
-
-# ============================================================
-# WAITING
-# ============================================================
-
-if not search_query:
-
-    st.info(
-        "👆 أدخل الكود يدوياً أو استخدم الكاميرا لمسح الباركود."
+    scanner_enabled = st.toggle(
+        "تشغيل الكاميرا",
+        value=st.session_state[
+            "scanner_enabled"
+        ],
+        key="scanner_toggle",
     )
 
-    st.stop()
+    st.session_state[
+        "scanner_enabled"
+    ] = scanner_enabled
+
+
+    if not scanner_enabled:
+
+        st.info(
+            "فعّل الكاميرا لبدء مسح الباركود."
+        )
+
+        return
+
+
+    # Queue shared between the camera callback
+    # and Streamlit main thread.
+    result_queue = queue.Queue(
+        maxsize=1
+    )
+
+    last_scan_time = {
+        "value": 0.0
+    }
+
+
+    def video_frame_callback(
+        frame
+    ):
+
+        image = frame.to_ndarray(
+            format="bgr24"
+        )
+
+        now = time.monotonic()
+
+        # Don't run the decoder on every single frame.
+        if (
+            now
+            - last_scan_time["value"]
+            > 0.18
+        ):
+
+            last_scan_time[
+                "value"
+            ] = now
+
+            decoded = (
+                decode_barcode_frame(
+                    image
+                )
+            )
+
+            if decoded:
+
+                try:
+
+                    result_queue.put_nowait(
+                        decoded
+                    )
+
+                except queue.Full:
+
+                    pass
+
+        # ----------------------------------------------------
+        # Draw scanner guide
+        # ----------------------------------------------------
+
+        h, w = image.shape[:2]
+
+        box_width = int(
+            w * 0.78
+        )
+
+        box_height = int(
+            h * 0.30
+        )
+
+        left = (
+            w - box_width
+        ) // 2
+
+        top = (
+            h - box_height
+        ) // 2
+
+        right = left + box_width
+        bottom = top + box_height
+
+        # Dark translucent-ish guide via lines.
+        cv2.rectangle(
+            image,
+            (left, top),
+            (right, bottom),
+            (255, 255, 255),
+            3,
+        )
+
+        # Corner markers
+        corner = 35
+
+        thickness = 6
+
+        # Top-left
+        cv2.line(
+            image,
+            (left, top),
+            (left + corner, top),
+            (0, 255, 0),
+            thickness,
+        )
+
+        cv2.line(
+            image,
+            (left, top),
+            (left, top + corner),
+            (0, 255, 0),
+            thickness,
+        )
+
+        # Top-right
+        cv2.line(
+            image,
+            (right, top),
+            (right - corner, top),
+            (0, 255, 0),
+            thickness,
+        )
+
+        cv2.line(
+            image,
+            (right, top),
+            (right, top + corner),
+            (0, 255, 0),
+            thickness,
+        )
+
+        # Bottom-left
+        cv2.line(
+            image,
+            (left, bottom),
+            (left + corner, bottom),
+            (0, 255, 0),
+            thickness,
+        )
+
+        cv2.line(
+            image,
+            (left, bottom),
+            (left, bottom - corner),
+            (0, 255, 0),
+            thickness,
+        )
+
+        # Bottom-right
+        cv2.line(
+            image,
+            (right, bottom),
+            (right - corner, bottom),
+            (0, 255, 0),
+            thickness,
+        )
+
+        cv2.line(
+            image,
+            (right, bottom),
+            (right, bottom - corner),
+            (0, 255, 0),
+            thickness,
+        )
+
+        return av.VideoFrame.from_ndarray(
+            image,
+            format="bgr24",
+        )
+
+
+    ctx = webrtc_streamer(
+        key="barcode-live-scanner",
+
+        mode=WebRtcMode.SENDRECV,
+
+        video_frame_callback=(
+            video_frame_callback
+        ),
+
+        media_stream_constraints={
+            "video": {
+                "width": {
+                    "ideal": 1280
+                },
+                "height": {
+                    "ideal": 720
+                },
+                "facingMode": {
+                    "ideal": "environment"
+                },
+            },
+            "audio": False,
+        },
+
+        rtc_configuration={
+            "iceServers": [
+                {
+                    "urls": [
+                        "stun:stun.l.google.com:19302"
+                    ]
+                }
+            ]
+        },
+
+        desired_playing_state=True,
+
+        sendback_audio=False,
+    )
+
+
+    # --------------------------------------------------------
+    # Wait for a result while the camera is active.
+    # --------------------------------------------------------
+
+    if ctx.state.playing:
+
+        status = st.empty()
+
+        status.info(
+            "🔎 جاري البحث عن الباركود..."
+        )
+
+        while ctx.state.playing:
+
+            try:
+
+                result = (
+                    result_queue.get(
+                        timeout=0.25
+                    )
+                )
+
+            except queue.Empty:
+
+                continue
+
+            barcode = result[
+                "text"
+            ]
+
+            st.session_state[
+                "scanned_barcode"
+            ] = barcode
+
+            st.session_state[
+                "scanner_enabled"
+            ] = False
+
+            st.session_state[
+                "scanner_toggle"
+            ] = False
+
+            st.rerun()
 
 
 # ============================================================
-# DATABASE COLUMNS
+# SEARCH / PRODUCT UI
 # ============================================================
 
-col_code = "0"
-col_barcode = "1"
-col_desc = "2"
-col_qty = "3"
+def render_product(
+    df,
+    search_query,
+):
+
+    col_code = "0"
+    col_barcode = "1"
+    col_desc = "2"
+    col_qty = "3"
 
 
-# ============================================================
-# SEARCH
-# ============================================================
-
-matches = df[
-    (df[col_barcode] == search_query)
-    |
-    (df[col_code] == search_query)
-]
+    matches = df[
+        (df[col_barcode] == search_query)
+        |
+        (df[col_code] == search_query)
+    ]
 
 
-# ============================================================
-# PRODUCT FOUND
-# ============================================================
+    if matches.empty:
 
-if not matches.empty:
+        st.error(
+            "لم يتم العثور على المنتج."
+        )
+
+        similar = df[
+            df[col_code].str.contains(
+                search_query,
+                na=False,
+                case=False,
+                regex=False,
+            )
+            |
+            df[col_barcode].str.contains(
+                search_query,
+                na=False,
+                case=False,
+                regex=False,
+            )
+        ]
+
+
+        if not similar.empty:
+
+            st.subheader(
+                "نتائج مشابهة"
+            )
+
+            for _, row in (
+                similar.head(5).iterrows()
+            ):
+
+                description = str(
+                    row[col_desc]
+                ).strip()
+
+                code = str(
+                    row[col_code]
+                ).strip()
+
+                barcode = str(
+                    row[col_barcode]
+                ).strip()
+
+                with st.container(
+                    border=True
+                ):
+
+                    st.write(
+                        f"**{description}**"
+                    )
+
+                    st.caption(
+                        f"الكود: {code}  •  "
+                        f"الباركود: {barcode}"
+                    )
+
+        return
+
+
+    # ========================================================
+    # PRODUCT
+    # ========================================================
 
     row = matches.iloc[0]
 
@@ -1266,7 +1219,11 @@ if not matches.empty:
     ).strip()
 
 
-    if not barcode or barcode.lower() == "nan":
+    if (
+        not barcode
+        or barcode.lower() == "nan"
+    ):
+
         barcode = "غير متوفر"
 
 
@@ -1287,115 +1244,67 @@ if not matches.empty:
 
 
     # ========================================================
-    # PRODUCT INFORMATION
+    # PRODUCT HEADER
     # ========================================================
 
-    st.markdown(
-        '<div class="product-card">',
-        unsafe_allow_html=True,
+    st.success(
+        "تم العثور على المنتج"
     )
 
-    st.markdown(
-        f"""
-        <div class="product-heading">
-            📦 {description}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container(
+        border=True
+    ):
 
+        st.title(
+            f"📦 {description}"
+        )
 
-    info_col1, info_col2 = st.columns(
-        2,
-        gap="medium",
-    )
+        st.divider()
 
-
-    with info_col1:
-
-        st.markdown(
-            f"""
-            <div class="info-card">
-
-                <div class="info-label">
-                    🔢 كود المنتج
-                </div>
-
-                <div class="info-value">
-                    {code}
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True,
+        info1, info2, info3 = (
+            st.columns(
+                3,
+                gap="large",
+            )
         )
 
 
-    with info_col2:
+        with info1:
 
-        st.markdown(
-            f"""
-            <div class="info-card">
-
-                <div class="info-label">
-                    🏷️ الباركود
-                </div>
-
-                <div class="info-value">
-                    {barcode}
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            st.metric(
+                "كود المنتج",
+                code,
+            )
 
 
-    st.markdown(
-        f"""
-        <div class="quantity-card">
+        with info2:
 
-            <div class="quantity-number">
-                {quantity}
-            </div>
-
-            <div class="quantity-label">
-                الكمية المتوفرة
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            st.metric(
+                "الباركود",
+                barcode,
+            )
 
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True,
-    )
+        with info3:
+
+            st.metric(
+                "الكمية",
+                quantity,
+            )
 
 
     # ========================================================
-    # PRODUCT IMAGE
+    # IMAGE
     # ========================================================
 
-    st.markdown(
-        '<div class="image-card">',
-        unsafe_allow_html=True,
+    st.subheader(
+        "🖼️ صورة المنتج"
     )
-
-    st.markdown(
-        '<div class="section-title">'
-        '🖼️ صورة المنتج'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
 
     try:
 
         with st.spinner(
-            "جاري البحث عن صورة المنتج..."
+            "جاري تحميل صورة المنتج..."
         ):
 
             nodes = get_mega_nodes()
@@ -1409,112 +1318,181 @@ if not matches.empty:
 
         if image_node is None:
 
-            st.warning(
-                "📷 لم يتم العثور على صورة بهذا "
+            st.info(
+                "لا توجد صورة مرتبطة بهذا "
                 "الكود أو الباركود."
             )
 
-        else:
-
-            with st.spinner(
-                "جاري تحميل صورة المنتج..."
-            ):
-
-                image_bytes = (
-                    download_mega_image(
-                        image_node["handle"],
-                        image_node["key"],
-                    )
-                )
+            return
 
 
-            display_product_image(
-                image_bytes,
-                image_node["name"],
+        image_bytes = (
+            download_mega_image(
+                image_node["handle"],
+                image_node["key"],
+            )
+        )
+
+
+        # ----------------------------------------------------
+        # Resize image for a clean website presentation.
+        # ----------------------------------------------------
+
+        image = Image.open(
+            BytesIO(image_bytes)
+        )
+
+
+        max_width = 520
+        max_height = 620
+
+
+        image.thumbnail(
+            (
+                max_width,
+                max_height,
+            ),
+            Image.Resampling.LANCZOS,
+        )
+
+
+        left, center, right = (
+            st.columns(
+                [1, 2, 1]
+            )
+        )
+
+
+        with center:
+
+            st.image(
+                image,
+                width=500,
+            )
+
+            st.caption(
+                image_node["name"]
             )
 
 
     except Exception as e:
 
         st.error(
-            f"❌ خطأ في تحميل صورة MEGA: {e}"
+            f"تعذر تحميل صورة المنتج: {e}"
         )
 
 
-    st.markdown(
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-
 # ============================================================
-# PRODUCT NOT FOUND
+# MAIN
 # ============================================================
 
-else:
+df = load_data()
+
+
+if df is None:
 
     st.error(
-        "❌ لم يتم العثور على المنتج بهذا "
-        "الباركود أو الكود."
+        "ملف DATABASE.xlsx غير موجود."
+    )
+
+    st.stop()
+
+
+if df.empty:
+
+    st.error(
+        "ملف DATABASE.xlsx فارغ."
+    )
+
+    st.stop()
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.title(
+    "📦 Holland Bazar T&D"
+)
+
+st.caption(
+    "نظام البحث السريع عن المنتجات والمخزون"
+)
+
+st.divider()
+
+
+# ============================================================
+# SEARCH / SCANNER TABS
+# ============================================================
+
+search_tab, scanner_tab = st.tabs(
+    [
+        "🔎 البحث عن منتج",
+        "📷 مسح الباركود",
+    ]
+)
+
+
+# ============================================================
+# SEARCH TAB
+# ============================================================
+
+with search_tab:
+
+    scanned_value = st.session_state.get(
+        "scanned_barcode",
+        "",
     )
 
 
-    similar = df[
-        df[col_code].str.contains(
-            search_query,
-            na=False,
-            case=False,
-            regex=False,
-        )
-        |
-        df[col_barcode].str.contains(
-            search_query,
-            na=False,
-            case=False,
-            regex=False,
-        )
-    ]
+    search_query = st.text_input(
+        "الباركود أو كود المنتج",
+        value=scanned_value,
+        placeholder="مثال: 6932308668058",
+        key="product_search",
+    ).strip()
 
 
-    if not similar.empty:
+    if scanned_value:
 
-        st.markdown(
-            "### 💡 هل تقصد أحد هذه المنتجات؟"
+        st.success(
+            f"تمت قراءة الباركود من الكاميرا: "
+            f"{scanned_value}"
         )
 
 
-        for _, suggestion in (
-            similar.head(5).iterrows()
+        if st.button(
+            "مسح نتيجة المسح",
+            use_container_width=True,
         ):
 
-            suggestion_code = str(
-                suggestion[col_code]
-            ).strip()
+            st.session_state[
+                "scanned_barcode"
+            ] = ""
 
-            suggestion_barcode = str(
-                suggestion[col_barcode]
-            ).strip()
-
-            suggestion_description = str(
-                suggestion[col_desc]
-            ).strip()
+            st.rerun()
 
 
-            st.markdown(
-                f"""
-                <div class="suggestion-card">
+    if search_query:
 
-                    <div class="suggestion-title">
-                        📦 {suggestion_description}
-                    </div>
+        render_product(
+            df,
+            search_query,
+        )
 
-                    <div class="suggestion-details">
-                        الكود: {suggestion_code}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                        الباركود: {suggestion_barcode}
-                    </div>
+    else:
 
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        st.info(
+            "أدخل الباركود أو كود المنتج، "
+            "أو استخدم تبويب «مسح الباركود»."
+        )
+
+
+# ============================================================
+# SCANNER TAB
+# ============================================================
+
+with scanner_tab:
+
+    render_live_scanner()
