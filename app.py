@@ -1,13 +1,21 @@
-```python
 import streamlit as st
 import pandas as pd
 import os
 import asyncio
+import tempfile
+import shutil
 from pathlib import Path
 
-# IMPORTANT:
-# This is the maintained async MEGA package.
-from mega import Mega
+# ============================================================
+# IMPORTANT
+# ============================================================
+# We use async-mega-py.
+#
+# DO NOT install mega.py separately.
+#
+# ============================================================
+
+from mega.client import MegaNzClient
 
 
 # ============================================================
@@ -80,6 +88,14 @@ div.stButton > button:first-child {
     margin-top: 5px;
 }
 
+.photo-box {
+    padding: 15px;
+    background-color: #1e293b;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    margin-top: 10px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -90,19 +106,19 @@ div.stButton > button:first-child {
 
 EXCEL_PATH = "DATABASE.xlsx"
 
-# Your MEGA public folder
 MEGA_FOLDER_URL = (
     "https://mega.nz/folder/"
     "HrximbwC#9wvR9D8OQnrAJlTItE6Oag"
 )
 
-# Local cache for downloaded images
+# Persistent local cache.
+# Streamlit Cloud keeps this during the running instance.
 IMAGE_CACHE_DIR = Path("image_cache")
 IMAGE_CACHE_DIR.mkdir(exist_ok=True)
 
 
 # ============================================================
-# LOAD EXCEL
+# DATABASE
 # ============================================================
 
 @st.cache_data(ttl=5)
@@ -118,7 +134,6 @@ def load_data():
             dtype=str
         )
 
-        # Keep your existing column numbering
         df.columns = [
             str(i)
             for i in range(len(df.columns))
@@ -138,7 +153,7 @@ def load_data():
     except Exception as e:
 
         st.error(
-            f"خطأ في قراءة ملف DATABASE.xlsx: {e}"
+            f"خطأ في قراءة DATABASE.xlsx: {e}"
         )
 
         return None
@@ -148,31 +163,108 @@ df = load_data()
 
 
 # ============================================================
-# MEGA
+# MEGA DOWNLOAD
 # ============================================================
 
-@st.cache_resource
-def create_mega_client():
-
-    try:
-        mega = Mega()
-        return mega.login()
-
-    except Exception as e:
-
-        return None
-
-
-# ============================================================
-# GET IMAGE FROM MEGA
-# ============================================================
-
-def get_image_from_mega(target_name):
+async def download_mega_folder():
 
     """
-    Finds the product image inside the public MEGA folder.
+    Downloads the public MEGA folder to a temporary directory.
 
-    Accepted image names:
+    Returns:
+        Path to downloaded folder
+    """
+
+    temp_dir = Path(
+        tempfile.mkdtemp(
+            prefix="mega_inventory_"
+        )
+    )
+
+    try:
+
+        async with MegaNzClient() as mega:
+
+            # Parse your public folder URL
+            public_handle, public_key, selected_node = (
+                mega.parse_folder_url(
+                    MEGA_FOLDER_URL
+                )
+            )
+
+            # Download public folder
+            await mega.download_public_folder(
+                public_handle,
+                public_key,
+                temp_dir,
+                selected_node
+            )
+
+        return temp_dir
+
+    except Exception:
+
+        # Clean temporary directory if download failed
+        shutil.rmtree(
+            temp_dir,
+            ignore_errors=True
+        )
+
+        raise
+
+
+# ============================================================
+# FIND IMAGE
+# ============================================================
+
+def find_image_in_directory(
+    directory,
+    target_name
+):
+
+    target_name = str(
+        target_name
+    ).strip().casefold()
+
+    valid_extensions = {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp"
+    }
+
+    for root, dirs, files in os.walk(directory):
+
+        for filename in files:
+
+            path = Path(root) / filename
+
+            if path.suffix.casefold() not in valid_extensions:
+                continue
+
+            stem = path.stem.strip().casefold()
+
+            if stem == target_name:
+
+                return path
+
+    return None
+
+
+# ============================================================
+# GET PRODUCT IMAGE
+# ============================================================
+
+@st.cache_data(
+    ttl=3600,
+    show_spinner=False
+)
+def get_product_image(target_name):
+
+    """
+    Looks for the product image in the public MEGA folder.
+
+    The image must be named using the barcode/code:
 
         123456.png
         123456.jpg
@@ -180,123 +272,120 @@ def get_image_from_mega(target_name):
         123456.webp
     """
 
-    target_name = str(target_name).strip()
+    target_name = str(
+        target_name
+    ).strip()
 
     if not target_name:
         return None
 
 
     # --------------------------------------------------------
-    # Check local cache first
+    # CHECK CACHE
     # --------------------------------------------------------
 
-    extensions = [
+    cached_extensions = [
         ".png",
         ".jpg",
         ".jpeg",
         ".webp"
     ]
 
-    for ext in extensions:
+    for extension in cached_extensions:
 
-        cached = IMAGE_CACHE_DIR / (
-            target_name + ext
+        cached_file = (
+            IMAGE_CACHE_DIR /
+            f"{target_name}{extension}"
         )
 
-        if cached.exists():
-            return str(cached)
+        if cached_file.exists():
+
+            return str(cached_file)
 
 
     # --------------------------------------------------------
-    # Connect to MEGA
+    # DOWNLOAD MEGA FOLDER
     # --------------------------------------------------------
-
-    mega = create_mega_client()
-
-    if mega is None:
-        return None
-
-
-    # --------------------------------------------------------
-    # Temporary folder
-    # --------------------------------------------------------
-
-    temp_dir = IMAGE_CACHE_DIR / "mega_temp"
-    temp_dir.mkdir(exist_ok=True)
-
 
     try:
 
-        # ----------------------------------------------------
-        # Download the public folder contents
-        #
-        # The MEGA library handles the encryption/decryption.
-        # ----------------------------------------------------
-
-        mega.download_url(
-            MEGA_FOLDER_URL,
-            dest_path=str(temp_dir)
+        downloaded_folder = asyncio.run(
+            download_mega_folder()
         )
 
-    except Exception:
+    except Exception as e:
 
-        # Some mega.py versions use the async public-folder
-        # implementation instead.
-        #
-        # We don't let this crash the Streamlit application.
-        pass
+        return {
+            "error": str(e)
+        }
 
 
     # --------------------------------------------------------
-    # Search downloaded files
+    # FIND TARGET IMAGE
     # --------------------------------------------------------
 
-    for root, dirs, files in os.walk(temp_dir):
+    image_path = find_image_in_directory(
+        downloaded_folder,
+        target_name
+    )
 
-        for filename in files:
 
-            filename_without_case = filename.casefold()
+    # --------------------------------------------------------
+    # IMAGE FOUND
+    # --------------------------------------------------------
 
-            for ext in extensions:
+    if image_path:
 
-                expected = (
-                    target_name + ext
-                ).casefold()
+        destination = (
+            IMAGE_CACHE_DIR /
+            image_path.name
+        )
 
-                if filename_without_case == expected:
+        try:
 
-                    source = Path(root) / filename
-                    destination = (
-                        IMAGE_CACHE_DIR / filename
-                    )
+            shutil.copy2(
+                image_path,
+                destination
+            )
 
-                    try:
+        except Exception:
 
-                        source.replace(
-                            destination
-                        )
+            return {
+                "error": (
+                    "تعذر حفظ صورة المنتج."
+                )
+            }
 
-                    except Exception:
+        # Remove temporary MEGA download
+        shutil.rmtree(
+            downloaded_folder,
+            ignore_errors=True
+        )
 
-                        destination.write_bytes(
-                            source.read_bytes()
-                        )
+        return str(destination)
 
-                    return str(destination)
 
+    # --------------------------------------------------------
+    # IMAGE NOT FOUND
+    # --------------------------------------------------------
+
+    shutil.rmtree(
+        downloaded_folder,
+        ignore_errors=True
+    )
 
     return None
 
 
 # ============================================================
-# PAGE HEADER
+# HEADER
 # ============================================================
 
 st.title("📦 Holland Bazar T&D")
 
 
 # ============================================================
-# SEARCH
+# SEARCH BOX
 # ============================================================
 
 search_query = st.text_input(
@@ -306,14 +395,14 @@ search_query = st.text_input(
 
 
 # ============================================================
-# DATABASE CHECK
+# DATABASE VALIDATION
 # ============================================================
 
 if df is None:
 
     st.error(
-        "❌ تأكد من وجود DATABASE.xlsx "
-        "بجوار app.py."
+        "❌ تأكد من وجود ملف DATABASE.xlsx "
+        "في المستودع بجوار app.py."
     )
 
     st.stop()
@@ -329,7 +418,7 @@ if df.empty:
 
 
 # ============================================================
-# COLUMNS
+# DATABASE COLUMNS
 # ============================================================
 
 col_code = "0"
@@ -339,7 +428,7 @@ col_qty = "3"
 
 
 # ============================================================
-# SEARCH RESULT
+# SEARCH
 # ============================================================
 
 if search_query:
@@ -381,7 +470,7 @@ if search_query:
 
 
         # ----------------------------------------------------
-        # Clean barcode
+        # CLEAN BARCODE
         # ----------------------------------------------------
 
         if (
@@ -393,7 +482,7 @@ if search_query:
 
 
         # ----------------------------------------------------
-        # Clean quantity
+        # CLEAN QUANTITY
         # ----------------------------------------------------
 
         if (
@@ -405,7 +494,7 @@ if search_query:
 
 
         # ====================================================
-        # PRODUCT CARD
+        # PRODUCT INFORMATION
         # ====================================================
 
         st.markdown(
@@ -437,7 +526,7 @@ if search_query:
 
 
         # ====================================================
-        # IMAGE
+        # PRODUCT PHOTO
         # ====================================================
 
         st.markdown(
@@ -445,8 +534,9 @@ if search_query:
         )
 
 
-        # Use barcode if available.
-        # Otherwise use product code.
+        # Use barcode first.
+        # If barcode isn't available, use code.
+
         target_name = (
             barcode
             if barcode != "غير متوفر"
@@ -455,48 +545,87 @@ if search_query:
 
 
         with st.spinner(
-            "جاري البحث عن صورة المنتج..."
+            "📷 جاري البحث عن صورة المنتج..."
         ):
 
-            image_path = get_image_from_mega(
+            image_result = get_product_image(
                 target_name
             )
 
 
-        # ----------------------------------------------------
+        # ====================================================
         # IMAGE FOUND
-        # ----------------------------------------------------
+        # ====================================================
 
-        if image_path:
+        if (
+            isinstance(image_result, str)
+            and os.path.exists(image_result)
+        ):
+
+            st.markdown(
+                '<div class="photo-box">',
+                unsafe_allow_html=True
+            )
 
             st.image(
-                image_path,
+                image_result,
                 caption=(
                     f"الصورة الأصلية للمنتج: {code}"
                 ),
                 use_container_width=True
             )
 
+            st.markdown(
+                '</div>',
+                unsafe_allow_html=True
+            )
 
-        # ----------------------------------------------------
+
+        # ====================================================
         # IMAGE NOT FOUND
-        # ----------------------------------------------------
+        # ====================================================
 
-        else:
+        elif image_result is None:
 
             st.info(
                 f"""
-                📷 لم يتم العثور على صورة لهذا المنتج.
+                📷 لا توجد صورة لهذا المنتج.
 
-                النظام يبحث عن:
+                النظام يبحث عن صورة باسم:
 
                 `{target_name}.png`
 
+                أو
+
                 `{target_name}.jpg`
+
+                أو
 
                 `{target_name}.jpeg`
 
+                أو
+
                 `{target_name}.webp`
+                """
+            )
+
+
+        # ====================================================
+        # MEGA ERROR
+        # ====================================================
+
+        elif isinstance(image_result, dict):
+
+            error_text = image_result.get(
+                "error",
+                "خطأ غير معروف"
+            )
+
+            st.error(
+                f"""
+                ❌ حدث خطأ أثناء قراءة صور MEGA:
+
+                {error_text}
                 """
             )
 
@@ -516,7 +645,7 @@ if search_query:
 
 
         # ----------------------------------------------------
-        # Similar products
+        # SIMILAR MATCHES
         # ----------------------------------------------------
 
         similar_matches = df[
@@ -546,6 +675,7 @@ if search_query:
             for _, row in similar_matches.head(5).iterrows():
 
                 sim_code = row[col_code]
+
                 sim_desc = row[col_desc]
 
 
@@ -599,35 +729,3 @@ else:
         """,
         unsafe_allow_html=True
     )
-```
-
-### 2. Replace `requirements.txt` completely
-
-The important part here is **forcing a modern Tenacity**. Your traceback is specifically showing an obsolete Tenacity implementation using `asyncio.coroutine`; current Tenacity supports Python 3.14.
-
-:::writing{variant="standard" id="74106" title="Complete requirements.txt"}
-```text
-streamlit
-pandas
-openpyxl
-mega.py==1.0.8
-tenacity>=9.1.4
-requests
-pycryptodome
-```
-
-### 3. One important thing
-
-After replacing both files, **redeploy/reboot the Streamlit app** so it creates a fresh environment.
-
-The error you showed is happening **before your app even starts**, at:
-
-```text
-from mega import Mega
-```
-
-so the inventory code isn't the problem. The dependency environment is.
-
-The original `mega.py` package is an old 1.0.8 release, and its dependencies include Tenacity; the current Tenacity releases support Python 3.14.
-
-**If the next error appears, paste it exactly as you did this one. I'll return the complete corrected files again — no instructions-only response.**
