@@ -20,7 +20,7 @@ from Crypto.Util import Counter
 st.set_page_config(
     page_title="Holland Bazar T&D",
     page_icon="📦",
-    layout="centered",
+    layout="wide",
 )
 
 
@@ -46,600 +46,450 @@ st.markdown(
     """
     <style>
 
-    /* ========================================================
+    /* =====================================================
        GLOBAL
-       ======================================================== */
-
-    * {
-        box-sizing: border-box;
-    }
+       ===================================================== */
 
     .stApp {
         direction: rtl;
         text-align: right;
-        background: #f4f7fb;
-        color: #172033;
+        background: #f5f7fb;
     }
 
-    .main {
-        padding-top: 0;
-    }
-
-    .block-container {
-        max-width: 980px;
-        padding: 34px 28px 60px 28px;
-    }
-
-    header[data-testid="stHeader"] {
+    [data-testid="stHeader"] {
         background: transparent;
     }
 
+    [data-testid="stDecoration"] {
+        display: none;
+    }
 
-    /* ========================================================
+    #MainMenu {
+        visibility: hidden;
+    }
+
+    footer {
+        visibility: hidden;
+    }
+
+    .block-container {
+        max-width: 1450px;
+        padding-top: 28px;
+        padding-bottom: 60px;
+        padding-left: 34px;
+        padding-right: 34px;
+    }
+
+
+    /* =====================================================
        TOP HEADER
-       ======================================================== */
+       ===================================================== */
 
-    .app-header {
+    .topbar {
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #e5e9f0;
+        border-radius: 18px;
+        padding: 18px 22px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 20px;
-
-        background: #ffffff;
-
-        border: 1px solid #e6eaf0;
-        border-radius: 18px;
-
-        padding: 18px 22px;
-
-        margin-bottom: 26px;
-
-        box-shadow:
-            0 5px 20px rgba(20, 35, 60, 0.055);
+        box-sizing: border-box;
     }
 
-    .brand {
+    .brand-wrap {
         display: flex;
         align-items: center;
-        gap: 13px;
+        gap: 14px;
     }
 
     .brand-icon {
-        width: 48px;
-        height: 48px;
-
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        background: #111827;
+        color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-
-        background: #eef4ff;
-
-        border-radius: 13px;
-
-        font-size: 25px;
-    }
-
-    .brand-text {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
+        font-size: 24px;
+        flex-shrink: 0;
     }
 
     .brand-title {
-        color: #172033;
-        font-size: 20px;
-        font-weight: 850;
+        color: #111827;
+        font-size: 21px;
         line-height: 1.2;
+        font-weight: 850;
+        margin: 0;
     }
 
     .brand-subtitle {
-        color: #7a8699;
-        font-size: 12px;
-        font-weight: 500;
+        color: #64748b;
+        font-size: 13px;
+        margin-top: 5px;
     }
 
     .system-status {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        gap: 7px;
-
+        gap: 8px;
         background: #f0fdf4;
-        border: 1px solid #dcfce7;
-
-        color: #15803d;
-
-        padding: 8px 12px;
+        border: 1px solid #bbf7d0;
+        color: #166534;
         border-radius: 999px;
-
+        padding: 8px 14px;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 750;
+        white-space: nowrap;
     }
 
     .status-dot {
-        width: 7px;
-        height: 7px;
-
-        background: #22c55e;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
+        background: #22c55e;
+        display: inline-block;
     }
 
 
-    /* ========================================================
-       HERO
-       ======================================================== */
+    /* =====================================================
+       SEARCH HERO
+       ===================================================== */
 
-    .hero {
-        text-align: center;
-        padding: 20px 10px 18px 10px;
+    .search-hero {
+        width: 100%;
+        background: #111827;
+        border-radius: 20px;
+        padding: 30px 32px 28px;
+        margin-bottom: 14px;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.13);
+        box-sizing: border-box;
     }
 
-    .hero-title {
-        color: #172033;
-
-        font-size: 30px;
-        line-height: 1.25;
-
-        font-weight: 900;
-
-        letter-spacing: -0.8px;
-
+    .hero-kicker {
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
         margin-bottom: 8px;
     }
 
+    .hero-title {
+        color: #ffffff;
+        font-size: 30px;
+        line-height: 1.2;
+        font-weight: 850;
+        margin: 0;
+    }
+
     .hero-description {
-        color: #7a8699;
-
+        color: #cbd5e1;
         font-size: 14px;
-
         line-height: 1.8;
-
-        margin-bottom: 20px;
+        margin-top: 10px;
+        max-width: 760px;
     }
 
 
-    /* ========================================================
-       SEARCH AREA
-       ======================================================== */
-
-    .search-label {
-        color: #344054;
-
-        font-size: 13px;
-
-        font-weight: 750;
-
-        margin-bottom: 7px;
-
-        display: block;
-    }
+    /* =====================================================
+       SEARCH INPUT
+       ===================================================== */
 
     div[data-testid="stTextInput"] {
-        margin-bottom: 26px;
-    }
-
-    div[data-testid="stTextInput"] > div {
-        width: 100%;
-    }
-
-    div[data-testid="stTextInput"] input {
-        height: 58px;
-
-        width: 100%;
-
-        background: #ffffff;
-
-        border: 1px solid #d9e0ea;
-
-        border-radius: 14px;
-
-        color: #172033;
-
-        font-size: 16px;
-
-        font-weight: 600;
-
-        padding: 0 18px;
-
-        box-shadow:
-            0 4px 16px rgba(20, 35, 60, 0.055);
-
-        transition:
-            border 0.2s ease,
-            box-shadow 0.2s ease;
-    }
-
-    div[data-testid="stTextInput"] input:hover {
-        border-color: #b9c5d6;
-    }
-
-    div[data-testid="stTextInput"] input:focus {
-        border-color: #3867d6;
-
-        box-shadow:
-            0 0 0 4px rgba(56, 103, 214, 0.10),
-            0 6px 20px rgba(20, 35, 60, 0.07);
+        margin-top: -2px;
+        margin-bottom: 24px;
     }
 
     div[data-testid="stTextInput"] label {
         display: none;
     }
 
+    div[data-testid="stTextInput"] > div {
+        background: #ffffff;
+        border: 1px solid #dbe1ea;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+    }
 
-    /* ========================================================
+    div[data-testid="stTextInput"] input {
+        height: 56px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #111827;
+        direction: rtl;
+        text-align: right;
+        border-radius: 14px;
+        padding-right: 18px;
+        padding-left: 18px;
+    }
+
+    div[data-testid="stTextInput"] input::placeholder {
+        color: #94a3b8;
+        opacity: 1;
+    }
+
+
+    /* =====================================================
        EMPTY STATE
-       ======================================================== */
+       ===================================================== */
 
     .empty-state {
         background: #ffffff;
-
-        border: 1px solid #e6eaf0;
-
+        border: 1px solid #e5e9f0;
         border-radius: 18px;
-
-        padding: 38px 25px;
-
+        padding: 58px 24px;
         text-align: center;
-
-        color: #7a8699;
-
-        box-shadow:
-            0 5px 20px rgba(20, 35, 60, 0.045);
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
     }
 
     .empty-icon {
-        font-size: 35px;
-        margin-bottom: 10px;
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: #f1f5f9;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
     }
 
     .empty-title {
-        color: #344054;
-        font-size: 15px;
-        font-weight: 750;
-        margin-bottom: 5px;
+        color: #111827;
+        font-size: 19px;
+        font-weight: 800;
     }
 
     .empty-text {
-        color: #98a2b3;
+        color: #64748b;
         font-size: 13px;
-    }
-
-
-    /* ========================================================
-       PRODUCT CARD
-       ======================================================== */
-
-    .product-card {
-        background: #ffffff;
-
-        border: 1px solid #e3e8ef;
-
-        border-radius: 20px;
-
-        overflow: hidden;
-
-        box-shadow:
-            0 8px 30px rgba(20, 35, 60, 0.065);
-
         margin-top: 8px;
     }
 
 
-    /* ========================================================
-       PRODUCT CARD HEADER
-       ======================================================== */
+    /* =====================================================
+       PRODUCT CARD
+       ===================================================== */
 
-    .product-card-header {
-        padding: 23px 25px 20px 25px;
+    .product-card {
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #e5e9f0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 10px 32px rgba(15, 23, 42, 0.07);
+        margin-bottom: 20px;
+    }
 
+    .product-head {
+        padding: 25px 28px 20px;
         border-bottom: 1px solid #edf0f4;
     }
 
-    .product-kicker {
-        color: #3867d6;
-
-        font-size: 11px;
-
+    .product-label {
+        color: #64748b;
+        font-size: 12px;
         font-weight: 800;
-
-        letter-spacing: 0.7px;
-
-        margin-bottom: 8px;
+        letter-spacing: 0.06em;
+        margin-bottom: 7px;
     }
 
-    .product-title {
-        color: #172033;
-
-        font-size: 23px;
-
+    .product-name {
+        color: #111827;
+        font-size: 27px;
+        line-height: 1.35;
         font-weight: 850;
-
-        line-height: 1.45;
-
         margin: 0;
     }
 
+    .product-body {
+        padding: 24px 28px 28px;
+    }
 
-    /* ========================================================
-       PRODUCT INFORMATION
-       ======================================================== */
 
-    .product-info-grid {
+    /* =====================================================
+       PRODUCT INFO
+       ===================================================== */
+
+    .info-grid {
         display: grid;
-
         grid-template-columns: 1fr 1fr;
-
         gap: 14px;
-
-        padding: 20px 25px;
     }
 
     .info-box {
         background: #f8fafc;
-
-        border: 1px solid #edf0f4;
-
-        border-radius: 13px;
-
-        padding: 14px 16px;
+        border: 1px solid #e7ebf1;
+        border-radius: 14px;
+        padding: 17px 18px;
+        min-height: 78px;
+        box-sizing: border-box;
     }
 
     .info-label {
-        color: #8a95a6;
-
-        font-size: 11px;
-
-        font-weight: 650;
-
-        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 12px;
+        margin-bottom: 8px;
     }
 
     .info-value {
-        color: #263247;
-
-        font-size: 15px;
-
-        font-weight: 750;
-
+        color: #111827;
+        font-size: 16px;
+        font-weight: 800;
         word-break: break-word;
     }
 
 
-    /* ========================================================
-       QUANTITY
-       ======================================================== */
+    /* =====================================================
+       STOCK
+       ===================================================== */
 
-    .stock-section {
-        margin: 0 25px 24px 25px;
-
-        background:
-            linear-gradient(
-                135deg,
-                #16233b 0%,
-                #21385e 100%
-            );
-
+    .stock-card {
+        width: 100%;
+        background: #111827;
         border-radius: 16px;
-
-        padding: 23px 25px;
-
-        position: relative;
-
-        overflow: hidden;
-    }
-
-    .stock-section::after {
-        content: "";
-
-        position: absolute;
-
-        width: 180px;
-        height: 180px;
-
-        border-radius: 50%;
-
-        border: 35px solid rgba(255,255,255,0.035);
-
-        left: -70px;
-        bottom: -115px;
-    }
-
-    .stock-top {
+        padding: 21px 23px;
+        color: #ffffff;
+        min-height: 130px;
+        box-sizing: border-box;
         display: flex;
-
         align-items: center;
-
         justify-content: space-between;
-
-        position: relative;
-
-        z-index: 2;
+        gap: 18px;
+        margin-top: 15px;
     }
 
     .stock-label {
-        color: #aebbd0;
-
+        color: #94a3b8;
         font-size: 12px;
-
-        font-weight: 650;
-    }
-
-    .stock-status {
-        color: #9ee6b4;
-
-        background: rgba(34,197,94,0.10);
-
-        border: 1px solid rgba(34,197,94,0.18);
-
-        border-radius: 999px;
-
-        padding: 5px 9px;
-
-        font-size: 10px;
-
-        font-weight: 750;
+        font-weight: 700;
+        margin-bottom: 7px;
     }
 
     .stock-number {
         color: #ffffff;
-
-        font-size: 39px;
-
+        font-size: 40px;
         line-height: 1;
-
         font-weight: 900;
+    }
 
-        margin-top: 10px;
+    .stock-unit {
+        color: #cbd5e1;
+        font-size: 13px;
+        margin-top: 8px;
+    }
 
-        position: relative;
-
-        z-index: 2;
+    .stock-badge {
+        border: 1px solid #334155;
+        background: #1e293b;
+        color: #e2e8f0;
+        border-radius: 999px;
+        padding: 9px 13px;
+        font-size: 12px;
+        font-weight: 750;
+        white-space: nowrap;
     }
 
 
-    /* ========================================================
-       IMAGE SECTION
-       ======================================================== */
-
-    .image-section {
-        border-top: 1px solid #edf0f4;
-
-        padding: 22px 25px 25px 25px;
-    }
+    /* =====================================================
+       IMAGE
+       ===================================================== */
 
     .section-title {
-        color: #344054;
-
-        font-size: 14px;
-
-        font-weight: 800;
-
-        margin-bottom: 13px;
+        color: #111827;
+        font-size: 19px;
+        font-weight: 850;
+        margin: 28px 0 13px;
     }
 
-    [data-testid="stImage"] {
-        background: #f8fafc;
-
-        border: 1px solid #e7ebf0;
-
-        border-radius: 15px;
-
-        padding: 10px;
-
-        overflow: hidden;
-
-        margin: 0;
+    .image-shell {
+        width: 100%;
+        background: #ffffff;
+        border: 1px solid #e5e9f0;
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+        box-sizing: border-box;
     }
 
-    [data-testid="stImage"] img {
-        border-radius: 10px;
+    .image-caption {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 10px;
+        text-align: center;
     }
 
 
-    /* ========================================================
+    /* =====================================================
        SUGGESTIONS
-       ======================================================== */
+       ===================================================== */
 
     .suggestions-title {
-        color: #344054;
-
-        font-size: 16px;
-
-        font-weight: 800;
-
-        margin: 25px 0 13px 0;
+        color: #111827;
+        font-size: 19px;
+        font-weight: 850;
+        margin: 24px 0 13px;
     }
 
     .suggestion-card {
+        width: 100%;
         background: #ffffff;
-
-        border: 1px solid #e4e9f0;
-
-        border-radius: 14px;
-
-        padding: 15px 17px;
-
-        margin-bottom: 9px;
-
-        box-shadow:
-            0 3px 12px rgba(20, 35, 60, 0.035);
+        border: 1px solid #e5e9f0;
+        border-radius: 15px;
+        padding: 16px 18px;
+        margin-bottom: 10px;
+        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+        box-sizing: border-box;
     }
 
     .suggestion-name {
-        color: #263247;
-
+        color: #111827;
         font-size: 14px;
-
-        font-weight: 750;
-
-        margin-bottom: 5px;
+        font-weight: 800;
+        margin-bottom: 7px;
     }
 
     .suggestion-meta {
-        color: #8a95a6;
-
-        font-size: 11px;
+        color: #64748b;
+        font-size: 12px;
     }
 
 
-    /* ========================================================
-       STREAMLIT ALERTS
-       ======================================================== */
-
-    div[data-testid="stAlert"] {
-        border-radius: 13px;
-
-        border-width: 1px;
-
-        font-size: 13px;
-
-        line-height: 1.7;
-    }
-
-
-    /* ========================================================
-       SPINNER
-       ======================================================== */
-
-    div[data-testid="stSpinner"] {
-        color: #3867d6;
-    }
-
-
-    /* ========================================================
-       HIDE UNNECESSARY STREAMLIT FOOTER
-       ======================================================== */
-
-    footer {
-        visibility: hidden;
-    }
-
-
-    /* ========================================================
+    /* =====================================================
        MOBILE
-       ======================================================== */
+       ===================================================== */
 
     @media (max-width: 700px) {
 
         .block-container {
-            padding: 18px 13px 40px 13px;
+            padding-left: 14px;
+            padding-right: 14px;
+            padding-top: 14px;
         }
 
-        .app-header {
-            padding: 14px 16px;
-        }
-
-        .brand-icon {
-            width: 42px;
-            height: 42px;
-            font-size: 21px;
-        }
-
-        .brand-title {
-            font-size: 17px;
+        .topbar {
+            padding: 15px;
+            align-items: flex-start;
         }
 
         .system-status {
             display: none;
+        }
+
+        .brand-title {
+            font-size: 18px;
+        }
+
+        .brand-subtitle {
+            font-size: 12px;
+        }
+
+        .search-hero {
+            padding: 24px 20px 21px;
         }
 
         .hero-title {
@@ -650,39 +500,33 @@ st.markdown(
             font-size: 13px;
         }
 
-        div[data-testid="stTextInput"] input {
-            height: 54px;
-            font-size: 15px;
+        .product-head {
+            padding: 21px 18px 17px;
         }
 
-        .product-card-header {
-            padding: 19px 18px 17px 18px;
+        .product-body {
+            padding: 19px 18px 22px;
         }
 
-        .product-title {
-            font-size: 20px;
+        .product-name {
+            font-size: 21px;
         }
 
-        .product-info-grid {
+        .info-grid {
             grid-template-columns: 1fr;
-
-            padding: 17px 18px;
-
-            gap: 9px;
         }
 
-        .stock-section {
-            margin: 0 18px 19px 18px;
-
-            padding: 20px;
-        }
-
-        .image-section {
-            padding: 19px 18px 20px 18px;
+        .stock-card {
+            align-items: flex-start;
+            flex-direction: column;
         }
 
         .stock-number {
-            font-size: 35px;
+            font-size: 36px;
+        }
+
+        .image-shell {
+            padding: 12px;
         }
     }
 
@@ -755,8 +599,6 @@ def a32_to_bytes(values):
 def decrypt_key(encrypted_key, key):
     """
     Decrypt a MEGA node key using AES-ECB.
-
-    This is the same key operation used by MEGA clients.
     """
 
     encrypted_bytes = a32_to_bytes(
@@ -785,11 +627,6 @@ def decrypt_key(encrypted_key, key):
 def decrypt_attributes(encrypted_attributes, key):
     """
     Decrypt MEGA file/folder attributes.
-
-    Valid plaintext starts with:
-    MEGA
-
-    followed by JSON.
     """
 
     encrypted = mega_b64_decode(
@@ -832,9 +669,7 @@ def decrypt_attributes(encrypted_attributes, key):
 
 def parse_mega_folder_url(url):
     """
-    Extract:
-        folder handle
-        folder encryption key
+    Extract folder handle and folder encryption key.
     """
 
     match = re.search(
@@ -1108,6 +943,7 @@ def find_mega_image(
             )[0].lower()
 
             if stem == identifier:
+
                 return node
 
     for identifier in identifiers:
@@ -1119,6 +955,7 @@ def find_mega_image(
             )[0].lower()
 
             if identifier in stem:
+
                 return node
 
     return None
@@ -1295,22 +1132,22 @@ def load_data():
 
 st.markdown(
     """
-    <div class="app-header">
+    <div class="topbar">
 
-        <div class="brand">
+        <div class="brand-wrap">
 
             <div class="brand-icon">
                 📦
             </div>
 
-            <div class="brand-text">
+            <div>
 
                 <div class="brand-title">
-                    Holland Bazar T&D
+                    Holland Bazar T&amp;D
                 </div>
 
                 <div class="brand-subtitle">
-                    نظام البحث وإدارة المخزون
+                    نظام البحث عن المنتجات والمخزون
                 </div>
 
             </div>
@@ -1318,33 +1155,24 @@ st.markdown(
         </div>
 
         <div class="system-status">
-
             <span class="status-dot"></span>
-
             النظام يعمل
-
         </div>
 
     </div>
-    """,
-    unsafe_allow_html=True,
-)
 
+    <div class="search-hero">
 
-# ============================================================
-# HERO
-# ============================================================
-
-st.markdown(
-    """
-    <div class="hero">
+        <div class="hero-kicker">
+            INVENTORY LOOKUP
+        </div>
 
         <div class="hero-title">
-            البحث عن منتج
+            ابحث عن منتج
         </div>
 
         <div class="hero-description">
-            أدخل الباركود أو كود المنتج للوصول إلى معلومات المخزون والصورة.
+            أدخل الباركود أو الكود للوصول إلى بيانات المنتج والكمية والصورة بشكل سريع وواضح.
         </div>
 
     </div>
@@ -1382,15 +1210,11 @@ if df.empty:
 # ============================================================
 
 search_query = st.text_input(
-    "البحث",
+    "🔍",
     key="main_search",
-    placeholder="اكتب الباركود أو كود المنتج هنا...",
+    placeholder="أدخل الباركود أو الكود هنا...",
 ).strip()
 
-
-# ============================================================
-# EMPTY SEARCH
-# ============================================================
 
 if not search_query:
 
@@ -1403,11 +1227,11 @@ if not search_query:
             </div>
 
             <div class="empty-title">
-                ابدأ بالبحث عن منتج
+                جاهز للبحث
             </div>
 
             <div class="empty-text">
-                استخدم الباركود أو كود المنتج في مربع البحث أعلاه.
+                اكتب الباركود أو الكود في خانة البحث بالأعلى لعرض بيانات المنتج.
             </div>
 
         </div>
@@ -1474,72 +1298,77 @@ if not matches.empty:
 
 
     # ========================================================
-    # PRODUCT CARD
+    # PRODUCT INFORMATION
     # ========================================================
 
     st.markdown(
         f"""
         <div class="product-card">
 
-            <div class="product-card-header">
+            <div class="product-head">
 
-                <div class="product-kicker">
-                    PRODUCT INFORMATION
+                <div class="product-label">
+                    PRODUCT FOUND
                 </div>
 
-                <div class="product-title">
+                <div class="product-name">
                     {description}
                 </div>
 
             </div>
 
+            <div class="product-body">
 
-            <div class="product-info-grid">
+                <div class="info-grid">
 
-                <div class="info-box">
+                    <div class="info-box">
 
-                    <div class="info-label">
-                        كود المنتج
+                        <div class="info-label">
+                            الكود
+                        </div>
+
+                        <div class="info-value">
+                            {code}
+                        </div>
+
                     </div>
 
-                    <div class="info-value">
-                        {code}
-                    </div>
+                    <div class="info-box">
 
-                </div>
+                        <div class="info-label">
+                            الباركود
+                        </div>
 
+                        <div class="info-value">
+                            {barcode}
+                        </div>
 
-                <div class="info-box">
-
-                    <div class="info-label">
-                        الباركود
-                    </div>
-
-                    <div class="info-value">
-                        {barcode}
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="stock-section">
-
-                <div class="stock-top">
-
-                    <div class="stock-label">
-                        الكمية المتوفرة
-                    </div>
-
-                    <div class="stock-status">
-                        متوفر
                     </div>
 
                 </div>
 
-                <div class="stock-number">
-                    {quantity}
+                <div class="stock-card">
+
+                    <div>
+
+                        <div class="stock-label">
+                            الكمية المتوفرة
+                        </div>
+
+                        <div class="stock-number">
+                            {quantity}
+                        </div>
+
+                        <div class="stock-unit">
+                            وحدة في المخزون
+                        </div>
+
+                    </div>
+
+                    <div class="stock-badge">
+                        المخزون الحالي
+                    </div>
+
                 </div>
 
             </div>
@@ -1556,16 +1385,12 @@ if not matches.empty:
 
     st.markdown(
         """
-        <div class="image-section">
-
-            <div class="section-title">
-                🖼️ صورة المنتج
-            </div>
-
+        <div class="section-title">
+            🖼️ صورة المنتج
+        </div>
         """,
         unsafe_allow_html=True,
     )
-
 
     try:
 
@@ -1601,10 +1426,26 @@ if not matches.empty:
                     )
                 )
 
+            st.markdown(
+                """
+                <div class="image-shell">
+                """,
+                unsafe_allow_html=True,
+            )
+
             st.image(
                 image_bytes,
-                caption=image_node["name"],
                 use_container_width=True,
+            )
+
+            st.markdown(
+                f"""
+                <div class="image-caption">
+                    {image_node["name"]}
+                </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
     except Exception as e:
@@ -1612,14 +1453,6 @@ if not matches.empty:
         st.error(
             f"❌ خطأ في تحميل صورة MEGA: {e}"
         )
-
-
-    st.markdown(
-        """
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 # ============================================================
@@ -1654,7 +1487,7 @@ else:
         st.markdown(
             """
             <div class="suggestions-title">
-                💡 منتجات مشابهة
+                💡 هل تقصد أحد هذه المنتجات؟
             </div>
             """,
             unsafe_allow_html=True,
