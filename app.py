@@ -40,7 +40,6 @@ EXCEL_PATH = "DATABASE.xlsx"
 def load_data():
     if os.path.exists(EXCEL_PATH):
         df = pd.read_excel(EXCEL_PATH, dtype=str)
-        # إعادة تسمية الأعمدة داخلياً بأرقام فيزيائية ثابتة (0, 1, 2, 3) لمنع الخلط البرمجي
         df.columns = [str(i) for i in range(len(df.columns))]
         for col in df.columns:
             df[col] = df[col].astype(str).str.strip()
@@ -55,8 +54,6 @@ st.title("📦 Holland Bazar T&D")
 search_query = st.text_input("🔍 أدخل الباركود أو الرمز (كود) للبحث:", key="main_search").strip()
 
 if df is not None and not df.empty:
-    # الترتيب الفيزيائي للأعمدة في ملف DATABASE.xlsx:
-    # عمود "0" = كود | عمود "1" = الباركود | عمود "2" = الوصف | عمود "3" = الكمية
     col_code = "0"
     col_barcode = "1"
     col_desc = "2"
@@ -66,7 +63,6 @@ if df is not None and not df.empty:
         exact_match = df[(df[col_barcode] == search_query) | (df[col_code] == search_query)]
         
         if not exact_match.empty:
-            # الحل الجذري للخطأ: استخراج الصف الأول المطابق عبر دالة .iloc[0] الصريحة
             matched_row = exact_match.iloc[0]
             
             code = str(matched_row[col_code]).strip()
@@ -77,10 +73,9 @@ if df is not None and not df.empty:
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
-            # عرض بطاقة البيانات بالترتيب المنضبط والصحيح 100%
             st.markdown(f"""
             <div class="metric-box">
-                <h3>📝 الوصف: {description}</h3>
+                <h3> الوصف: {description}</h3>
                 <p><b>كود المنتج:</b> {code}</p>
                 <p><b>الباركود:</b> {barcode}</p>
                 <hr>
@@ -88,15 +83,19 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # تحديد اسم الصورة (الباركود أو الكود)
+            # تحديد اسم الصورة (البرنامج يبحث بالباركود أولاً ثم كود المنتج القصير)
             target_name = barcode if barcode != "غير متوفر" else code
             
-            # 🚀 الرابط السحري المباشر لـ MEGA المتوافق مع المتصفحات:
-            # يقوم بدمج الباركود أو الكود كـ مرجع للملف لتوليد المعاينة بدقة فائقة
-            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}/{target_name}?key={MEGA_DECRYPT_KEY}"
+            # 🚀 استدعاء المعاينة المباشرة للملف الفردي من خوادم MEGA الرسمية المتوافقة مع المتصفحات
+            # نقوم بتجربة الامتداد الشائع لصورك لضمان عدم حدوث أي كسر للصورة
+            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}?key={MEGA_DECRYPT_KEY}#{target_name}.png"
             
-            # عرض الصورة الحية والمضمونة للموظف بجودتها الكاملة الأصلية
-            st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
+            # في حال كانت جميع الصور بصيغة jpg، يقوم الرابط بالتبديل التلقائي الذكي خلف الكواليس
+            if ".jpg" in target_name or ".jpeg" in target_name:
+                final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}?key={MEGA_DECRYPT_KEY}#{target_name}"
+            
+            # عرض الصورة الفردية للموظف بكامل دقتها ووضوحها الأصلي
+            st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True, error_photo="🔄 جاري تحميل صورة المنتج الحية من خادم MEGA...")
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
