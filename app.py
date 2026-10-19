@@ -39,7 +39,7 @@ MEGA_API = "https://g.api.mega.co.nz/cs"
 
 
 # ============================================================
-# CSS
+# PROFESSIONAL UI
 # ============================================================
 
 st.markdown(
@@ -50,89 +50,257 @@ st.markdown(
        GLOBAL
        ======================================================== */
 
+    * {
+        box-sizing: border-box;
+    }
+
     .stApp {
         direction: rtl;
         text-align: right;
-        background:
-            radial-gradient(
-                circle at top right,
-                rgba(59, 130, 246, 0.07),
-                transparent 30%
-            ),
-            #f8fafc;
-        color: #0f172a;
+        background: #f4f7fb;
+        color: #172033;
     }
 
     .main {
-        padding-top: 2rem;
-        padding-bottom: 3rem;
+        padding-top: 0;
     }
 
     .block-container {
-        max-width: 1050px;
-        padding-top: 2rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
-        padding-bottom: 4rem;
+        max-width: 980px;
+        padding: 34px 28px 60px 28px;
+    }
+
+    header[data-testid="stHeader"] {
+        background: transparent;
     }
 
 
     /* ========================================================
-       MAIN TITLE
+       TOP HEADER
        ======================================================== */
 
-    .main-title {
-        font-size: 32px;
-        font-weight: 900;
-        letter-spacing: -0.7px;
-        margin-bottom: 28px;
-        color: #0f172a;
+    .app-header {
         display: flex;
         align-items: center;
-        gap: 10px;
+        justify-content: space-between;
+        gap: 20px;
+
+        background: #ffffff;
+
+        border: 1px solid #e6eaf0;
+        border-radius: 18px;
+
+        padding: 18px 22px;
+
+        margin-bottom: 26px;
+
+        box-shadow:
+            0 5px 20px rgba(20, 35, 60, 0.055);
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+    }
+
+    .brand-icon {
+        width: 48px;
+        height: 48px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #eef4ff;
+
+        border-radius: 13px;
+
+        font-size: 25px;
+    }
+
+    .brand-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .brand-title {
+        color: #172033;
+        font-size: 20px;
+        font-weight: 850;
+        line-height: 1.2;
+    }
+
+    .brand-subtitle {
+        color: #7a8699;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .system-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+
+        background: #f0fdf4;
+        border: 1px solid #dcfce7;
+
+        color: #15803d;
+
+        padding: 8px 12px;
+        border-radius: 999px;
+
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .status-dot {
+        width: 7px;
+        height: 7px;
+
+        background: #22c55e;
+        border-radius: 50%;
     }
 
 
     /* ========================================================
-       SEARCH INPUT
+       HERO
        ======================================================== */
 
-    div[data-testid="stTextInput"] {
-        margin-bottom: 24px;
+    .hero {
+        text-align: center;
+        padding: 20px 10px 18px 10px;
     }
 
-    div[data-testid="stTextInput"] label {
-        font-size: 15px;
-        font-weight: 700;
-        color: #334155;
+    .hero-title {
+        color: #172033;
+
+        font-size: 30px;
+        line-height: 1.25;
+
+        font-weight: 900;
+
+        letter-spacing: -0.8px;
+
         margin-bottom: 8px;
     }
 
+    .hero-description {
+        color: #7a8699;
+
+        font-size: 14px;
+
+        line-height: 1.8;
+
+        margin-bottom: 20px;
+    }
+
+
+    /* ========================================================
+       SEARCH AREA
+       ======================================================== */
+
+    .search-label {
+        color: #344054;
+
+        font-size: 13px;
+
+        font-weight: 750;
+
+        margin-bottom: 7px;
+
+        display: block;
+    }
+
+    div[data-testid="stTextInput"] {
+        margin-bottom: 26px;
+    }
+
+    div[data-testid="stTextInput"] > div {
+        width: 100%;
+    }
+
     div[data-testid="stTextInput"] input {
-        height: 52px;
-        border-radius: 12px;
-        border: 1px solid #cbd5e1;
+        height: 58px;
+
+        width: 100%;
+
         background: #ffffff;
-        color: #0f172a;
+
+        border: 1px solid #d9e0ea;
+
+        border-radius: 14px;
+
+        color: #172033;
+
         font-size: 16px;
-        font-weight: 500;
-        padding: 0 16px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+
+        font-weight: 600;
+
+        padding: 0 18px;
+
+        box-shadow:
+            0 4px 16px rgba(20, 35, 60, 0.055);
+
         transition:
-            border-color 0.2s ease,
+            border 0.2s ease,
             box-shadow 0.2s ease;
     }
 
     div[data-testid="stTextInput"] input:hover {
-        border-color: #94a3b8;
+        border-color: #b9c5d6;
     }
 
     div[data-testid="stTextInput"] input:focus {
-        border-color: #2563eb;
+        border-color: #3867d6;
+
         box-shadow:
-            0 0 0 3px rgba(37, 99, 235, 0.12),
-            0 4px 14px rgba(15, 23, 42, 0.06);
-        outline: none;
+            0 0 0 4px rgba(56, 103, 214, 0.10),
+            0 6px 20px rgba(20, 35, 60, 0.07);
+    }
+
+    div[data-testid="stTextInput"] label {
+        display: none;
+    }
+
+
+    /* ========================================================
+       EMPTY STATE
+       ======================================================== */
+
+    .empty-state {
+        background: #ffffff;
+
+        border: 1px solid #e6eaf0;
+
+        border-radius: 18px;
+
+        padding: 38px 25px;
+
+        text-align: center;
+
+        color: #7a8699;
+
+        box-shadow:
+            0 5px 20px rgba(20, 35, 60, 0.045);
+    }
+
+    .empty-icon {
+        font-size: 35px;
+        margin-bottom: 10px;
+    }
+
+    .empty-title {
+        color: #344054;
+        font-size: 15px;
+        font-weight: 750;
+        margin-bottom: 5px;
+    }
+
+    .empty-text {
+        color: #98a2b3;
+        font-size: 13px;
     }
 
 
@@ -140,159 +308,226 @@ st.markdown(
        PRODUCT CARD
        ======================================================== */
 
-    div[data-testid="stVerticalBlockBorderWrapper"] {
+    .product-card {
         background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        box-shadow:
-            0 4px 16px rgba(15, 23, 42, 0.05);
-        padding: 4px;
-        transition:
-            box-shadow 0.2s ease,
-            transform 0.2s ease;
-    }
 
-    div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        box-shadow:
-            0 8px 26px rgba(15, 23, 42, 0.08);
-    }
+        border: 1px solid #e3e8ef;
 
+        border-radius: 20px;
 
-    /* ========================================================
-       HEADINGS
-       ======================================================== */
-
-    h1,
-    h2,
-    h3 {
-        color: #0f172a !important;
-        letter-spacing: -0.3px;
-    }
-
-    h3 {
-        font-size: 21px !important;
-        font-weight: 800 !important;
-        margin-top: 4px !important;
-        margin-bottom: 14px !important;
-    }
-
-
-    /* ========================================================
-       NORMAL TEXT
-       ======================================================== */
-
-    p {
-        color: #334155;
-    }
-
-    strong {
-        color: #0f172a;
-        font-weight: 750;
-    }
-
-
-    /* ========================================================
-       QUANTITY CARD
-       ======================================================== */
-
-    .quantity-box {
-        position: relative;
         overflow: hidden;
+
+        box-shadow:
+            0 8px 30px rgba(20, 35, 60, 0.065);
+
+        margin-top: 8px;
+    }
+
+
+    /* ========================================================
+       PRODUCT CARD HEADER
+       ======================================================== */
+
+    .product-card-header {
+        padding: 23px 25px 20px 25px;
+
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .product-kicker {
+        color: #3867d6;
+
+        font-size: 11px;
+
+        font-weight: 800;
+
+        letter-spacing: 0.7px;
+
+        margin-bottom: 8px;
+    }
+
+    .product-title {
+        color: #172033;
+
+        font-size: 23px;
+
+        font-weight: 850;
+
+        line-height: 1.45;
+
+        margin: 0;
+    }
+
+
+    /* ========================================================
+       PRODUCT INFORMATION
+       ======================================================== */
+
+    .product-info-grid {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 14px;
+
+        padding: 20px 25px;
+    }
+
+    .info-box {
+        background: #f8fafc;
+
+        border: 1px solid #edf0f4;
+
+        border-radius: 13px;
+
+        padding: 14px 16px;
+    }
+
+    .info-label {
+        color: #8a95a6;
+
+        font-size: 11px;
+
+        font-weight: 650;
+
+        margin-bottom: 5px;
+    }
+
+    .info-value {
+        color: #263247;
+
+        font-size: 15px;
+
+        font-weight: 750;
+
+        word-break: break-word;
+    }
+
+
+    /* ========================================================
+       QUANTITY
+       ======================================================== */
+
+    .stock-section {
+        margin: 0 25px 24px 25px;
 
         background:
             linear-gradient(
                 135deg,
-                #0f172a 0%,
-                #1e293b 100%
+                #16233b 0%,
+                #21385e 100%
             );
 
-        border: 1px solid #334155;
-        border-radius: 18px;
+        border-radius: 16px;
 
-        padding: 26px 20px;
+        padding: 23px 25px;
 
-        text-align: center;
-
-        margin: 22px 0 28px 0;
-
-        box-shadow:
-            0 10px 25px rgba(15, 23, 42, 0.15);
-    }
-
-    .quantity-box::before {
-        content: "";
-
-        position: absolute;
-
-        width: 160px;
-        height: 160px;
-
-        border-radius: 50%;
-
-        background: rgba(255, 255, 255, 0.04);
-
-        top: -85px;
-        right: -55px;
-    }
-
-    .quantity-box::after {
-        content: "";
-
-        position: absolute;
-
-        width: 120px;
-        height: 120px;
-
-        border-radius: 50%;
-
-        background: rgba(255, 255, 255, 0.025);
-
-        bottom: -70px;
-        left: -45px;
-    }
-
-    .quantity-number {
         position: relative;
-        z-index: 1;
 
-        font-size: 42px;
-        line-height: 1.1;
+        overflow: hidden;
+    }
+
+    .stock-section::after {
+        content: "";
+
+        position: absolute;
+
+        width: 180px;
+        height: 180px;
+
+        border-radius: 50%;
+
+        border: 35px solid rgba(255,255,255,0.035);
+
+        left: -70px;
+        bottom: -115px;
+    }
+
+    .stock-top {
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        position: relative;
+
+        z-index: 2;
+    }
+
+    .stock-label {
+        color: #aebbd0;
+
+        font-size: 12px;
+
+        font-weight: 650;
+    }
+
+    .stock-status {
+        color: #9ee6b4;
+
+        background: rgba(34,197,94,0.10);
+
+        border: 1px solid rgba(34,197,94,0.18);
+
+        border-radius: 999px;
+
+        padding: 5px 9px;
+
+        font-size: 10px;
+
+        font-weight: 750;
+    }
+
+    .stock-number {
+        color: #ffffff;
+
+        font-size: 39px;
+
+        line-height: 1;
 
         font-weight: 900;
 
-        color: #ffffff;
+        margin-top: 10px;
 
-        letter-spacing: -1px;
-    }
-
-    .quantity-label {
         position: relative;
-        z-index: 1;
 
-        color: #cbd5e1;
-
-        font-size: 14px;
-        font-weight: 600;
-
-        margin-top: 8px;
+        z-index: 2;
     }
 
 
     /* ========================================================
-       IMAGE
+       IMAGE SECTION
        ======================================================== */
+
+    .image-section {
+        border-top: 1px solid #edf0f4;
+
+        padding: 22px 25px 25px 25px;
+    }
+
+    .section-title {
+        color: #344054;
+
+        font-size: 14px;
+
+        font-weight: 800;
+
+        margin-bottom: 13px;
+    }
 
     [data-testid="stImage"] {
         background: #f8fafc;
 
-        border: 1px solid #e2e8f0;
+        border: 1px solid #e7ebf0;
 
-        border-radius: 16px;
+        border-radius: 15px;
 
         padding: 10px;
 
-        margin-top: 8px;
-        margin-bottom: 20px;
+        overflow: hidden;
+
+        margin: 0;
     }
 
     [data-testid="stImage"] img {
@@ -301,15 +536,61 @@ st.markdown(
 
 
     /* ========================================================
-       ALERTS
+       SUGGESTIONS
+       ======================================================== */
+
+    .suggestions-title {
+        color: #344054;
+
+        font-size: 16px;
+
+        font-weight: 800;
+
+        margin: 25px 0 13px 0;
+    }
+
+    .suggestion-card {
+        background: #ffffff;
+
+        border: 1px solid #e4e9f0;
+
+        border-radius: 14px;
+
+        padding: 15px 17px;
+
+        margin-bottom: 9px;
+
+        box-shadow:
+            0 3px 12px rgba(20, 35, 60, 0.035);
+    }
+
+    .suggestion-name {
+        color: #263247;
+
+        font-size: 14px;
+
+        font-weight: 750;
+
+        margin-bottom: 5px;
+    }
+
+    .suggestion-meta {
+        color: #8a95a6;
+
+        font-size: 11px;
+    }
+
+
+    /* ========================================================
+       STREAMLIT ALERTS
        ======================================================== */
 
     div[data-testid="stAlert"] {
-        border-radius: 12px;
+        border-radius: 13px;
 
         border-width: 1px;
 
-        font-size: 14px;
+        font-size: 13px;
 
         line-height: 1.7;
     }
@@ -320,52 +601,16 @@ st.markdown(
        ======================================================== */
 
     div[data-testid="stSpinner"] {
-        color: #2563eb;
+        color: #3867d6;
     }
 
 
     /* ========================================================
-       CAPTIONS
+       HIDE UNNECESSARY STREAMLIT FOOTER
        ======================================================== */
 
-    [data-testid="stCaptionContainer"] {
-        color: #64748b;
-
-        font-size: 13px;
-    }
-
-
-    /* ========================================================
-       BUTTONS
-       ======================================================== */
-
-    button {
-        border-radius: 10px !important;
-
-        font-weight: 700 !important;
-    }
-
-
-    /* ========================================================
-       SCROLLBAR
-       ======================================================== */
-
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: #f1f5f9;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+    footer {
+        visibility: hidden;
     }
 
 
@@ -373,40 +618,72 @@ st.markdown(
        MOBILE
        ======================================================== */
 
-    @media (max-width: 768px) {
+    @media (max-width: 700px) {
 
         .block-container {
-            padding-left: 1rem;
-            padding-right: 1rem;
-            padding-top: 1.2rem;
+            padding: 18px 13px 40px 13px;
         }
 
-        .main-title {
-            font-size: 26px;
-            margin-bottom: 22px;
+        .app-header {
+            padding: 14px 16px;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            font-size: 21px;
+        }
+
+        .brand-title {
+            font-size: 17px;
+        }
+
+        .system-status {
+            display: none;
+        }
+
+        .hero-title {
+            font-size: 25px;
+        }
+
+        .hero-description {
+            font-size: 13px;
         }
 
         div[data-testid="stTextInput"] input {
-            height: 50px;
+            height: 54px;
             font-size: 15px;
         }
 
-        .quantity-box {
-            padding: 22px 16px;
+        .product-card-header {
+            padding: 19px 18px 17px 18px;
         }
 
-        .quantity-number {
-            font-size: 36px;
+        .product-title {
+            font-size: 20px;
         }
-    }
 
+        .product-info-grid {
+            grid-template-columns: 1fr;
 
-    /* ========================================================
-       STREAMLIT SPACING
-       ======================================================== */
+            padding: 17px 18px;
 
-    div[data-testid="stVerticalBlock"] {
-        gap: 0.75rem;
+            gap: 9px;
+        }
+
+        .stock-section {
+            margin: 0 18px 19px 18px;
+
+            padding: 20px;
+        }
+
+        .image-section {
+            padding: 19px 18px 20px 18px;
+        }
+
+        .stock-number {
+            font-size: 35px;
+        }
     }
 
     </style>
@@ -533,7 +810,6 @@ def decrypt_attributes(encrypted_attributes, key):
         encrypted
     )
 
-    # Remove zero padding.
     decrypted = decrypted.rstrip(
         b"\x00"
     )
@@ -561,9 +837,6 @@ def parse_mega_folder_url(url):
         folder encryption key
     """
 
-    # Modern format:
-    # https://mega.nz/folder/ID#KEY
-
     match = re.search(
         r"mega\.nz/folder/([^#/?]+)#([^/?]+)",
         url,
@@ -578,9 +851,6 @@ def parse_mega_folder_url(url):
             folder_handle,
             folder_key,
         )
-
-    # Legacy format:
-    # https://mega.nz/#F!ID!KEY
 
     match = re.search(
         r"mega\.nz/#F!([^!#/?]+)[!#]([^/?]+)",
@@ -615,13 +885,7 @@ def mega_api_request(
         "id": 0,
     }
 
-    # IMPORTANT:
-    #
-    # Public folder requests need the folder handle
-    # in the query string.
-
     if folder_handle:
-
         params["n"] = folder_handle
 
     response = requests.post(
@@ -675,13 +939,10 @@ def get_mega_nodes():
         )
     )
 
-    # The key in the public URL is itself
-    # the shared folder key.
     shared_key = base64_to_a32(
         folder_key_text
     )
 
-    # Ask MEGA for the complete public folder tree.
     response = mega_api_request(
         {
             "a": "f",
@@ -701,8 +962,6 @@ def get_mega_nodes():
 
     for node in nodes:
 
-        # 0 = file
-        # 1 = folder
         if node.get("t") not in (0, 1):
             continue
 
@@ -720,14 +979,6 @@ def get_mega_nodes():
             continue
 
         try:
-
-            # ------------------------------------------------
-            # Public-folder node keys have this form:
-            #
-            #     something:ENCRYPTED_KEY
-            #
-            # We need the part after ":".
-            # ------------------------------------------------
 
             if ":" in encrypted_node_key:
 
@@ -748,22 +999,10 @@ def get_mega_nodes():
                 encrypted_key_text
             )
 
-            # ------------------------------------------------
-            # Decrypt node key with shared folder key.
-            # ------------------------------------------------
-
             node_key = decrypt_key(
                 encrypted_key,
                 shared_key,
             )
-
-            # ------------------------------------------------
-            # File nodes use:
-            #
-            # key[0:4] XOR key[4:8]
-            #
-            # for the AES attribute/file key.
-            # ------------------------------------------------
 
             if node.get("t") == 0:
 
@@ -779,12 +1018,7 @@ def get_mega_nodes():
 
             else:
 
-                # Folder nodes use the node key directly.
                 file_key = node_key
-
-            # ------------------------------------------------
-            # Decrypt filename.
-            # ------------------------------------------------
 
             attributes = decrypt_attributes(
                 encrypted_attributes,
@@ -811,7 +1045,6 @@ def get_mega_nodes():
             )
 
         except Exception:
-            # Ignore individual bad/non-file nodes.
             continue
 
     return result
@@ -866,10 +1099,6 @@ def find_mega_image(
         )
     ]
 
-    # --------------------------------------------------------
-    # Exact filename match
-    # --------------------------------------------------------
-
     for identifier in identifiers:
 
         for node in files:
@@ -879,12 +1108,7 @@ def find_mega_image(
             )[0].lower()
 
             if stem == identifier:
-
                 return node
-
-    # --------------------------------------------------------
-    # Filename contains code/barcode
-    # --------------------------------------------------------
 
     for identifier in identifiers:
 
@@ -895,7 +1119,6 @@ def find_mega_image(
             )[0].lower()
 
             if identifier in stem:
-
                 return node
 
     return None
@@ -919,10 +1142,6 @@ def download_mega_image(
             MEGA_FOLDER_URL
         )
     )
-
-    # --------------------------------------------------------
-    # Request a download URL for this public-folder file.
-    # --------------------------------------------------------
 
     response = mega_api_request(
         {
@@ -954,10 +1173,6 @@ def download_mega_image(
             "MEGA did not return file attributes."
         )
 
-    # --------------------------------------------------------
-    # The node key is 8 x 32-bit values.
-    # --------------------------------------------------------
-
     key = tuple(node_key)
 
     if len(key) < 8:
@@ -965,7 +1180,6 @@ def download_mega_image(
             "Invalid MEGA file key."
         )
 
-    # File encryption key.
     aes_key_words = (
         key[0] ^ key[4],
         key[1] ^ key[5],
@@ -977,7 +1191,6 @@ def download_mega_image(
         aes_key_words
     )
 
-    # MEGA CTR IV.
     iv_words = (
         key[4],
         key[5],
@@ -1000,10 +1213,6 @@ def download_mega_image(
         AES.MODE_CTR,
         counter=counter,
     )
-
-    # --------------------------------------------------------
-    # Download encrypted file.
-    # --------------------------------------------------------
 
     response = requests.get(
         download_url,
@@ -1085,9 +1294,61 @@ def load_data():
 # ============================================================
 
 st.markdown(
-    '<div class="main-title">'
-    'Holland Bazar T&D 📦'
-    '</div>',
+    """
+    <div class="app-header">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                📦
+            </div>
+
+            <div class="brand-text">
+
+                <div class="brand-title">
+                    Holland Bazar T&D
+                </div>
+
+                <div class="brand-subtitle">
+                    نظام البحث وإدارة المخزون
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            النظام يعمل
+
+        </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ============================================================
+# HERO
+# ============================================================
+
+st.markdown(
+    """
+    <div class="hero">
+
+        <div class="hero-title">
+            البحث عن منتج
+        </div>
+
+        <div class="hero-description">
+            أدخل الباركود أو كود المنتج للوصول إلى معلومات المخزون والصورة.
+        </div>
+
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 
@@ -1121,15 +1382,37 @@ if df.empty:
 # ============================================================
 
 search_query = st.text_input(
-    "🔍 أدخل الباركود أو الرمز (كود) للبحث:",
+    "البحث",
     key="main_search",
+    placeholder="اكتب الباركود أو كود المنتج هنا...",
 ).strip()
 
 
+# ============================================================
+# EMPTY SEARCH
+# ============================================================
+
 if not search_query:
 
-    st.info(
-        "👆 أدخل الباركود أو الكود للبحث عن المنتج."
+    st.markdown(
+        """
+        <div class="empty-state">
+
+            <div class="empty-icon">
+                🔎
+            </div>
+
+            <div class="empty-title">
+                ابدأ بالبحث عن منتج
+            </div>
+
+            <div class="empty-text">
+                استخدم الباركود أو كود المنتج في مربع البحث أعلاه.
+            </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     st.stop()
@@ -1191,38 +1474,74 @@ if not matches.empty:
 
 
     # ========================================================
-    # PRODUCT INFORMATION
-    # ========================================================
-
-    with st.container(border=True):
-
-        st.subheader(
-            f"📦 {description}"
-        )
-
-        st.write(
-            f"**🔢 الكود:** {code}"
-        )
-
-        st.write(
-            f"**🏷️ الباركود:** {barcode}"
-        )
-
-
-    # ========================================================
-    # QUANTITY
+    # PRODUCT CARD
     # ========================================================
 
     st.markdown(
         f"""
-        <div class="quantity-box">
+        <div class="product-card">
 
-            <div class="quantity-number">
-                {quantity}
+            <div class="product-card-header">
+
+                <div class="product-kicker">
+                    PRODUCT INFORMATION
+                </div>
+
+                <div class="product-title">
+                    {description}
+                </div>
+
             </div>
 
-            <div class="quantity-label">
-                الكمية المتوفرة
+
+            <div class="product-info-grid">
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        كود المنتج
+                    </div>
+
+                    <div class="info-value">
+                        {code}
+                    </div>
+
+                </div>
+
+
+                <div class="info-box">
+
+                    <div class="info-label">
+                        الباركود
+                    </div>
+
+                    <div class="info-value">
+                        {barcode}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="stock-section">
+
+                <div class="stock-top">
+
+                    <div class="stock-label">
+                        الكمية المتوفرة
+                    </div>
+
+                    <div class="stock-status">
+                        متوفر
+                    </div>
+
+                </div>
+
+                <div class="stock-number">
+                    {quantity}
+                </div>
+
             </div>
 
         </div>
@@ -1235,9 +1554,18 @@ if not matches.empty:
     # IMAGE
     # ========================================================
 
-    st.subheader(
-        "🖼️ صورة المنتج"
+    st.markdown(
+        """
+        <div class="image-section">
+
+            <div class="section-title">
+                🖼️ صورة المنتج
+            </div>
+
+        """,
+        unsafe_allow_html=True,
     )
+
 
     try:
 
@@ -1286,6 +1614,14 @@ if not matches.empty:
         )
 
 
+    st.markdown(
+        """
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ============================================================
 # NOT FOUND
 # ============================================================
@@ -1315,8 +1651,13 @@ else:
 
     if not similar.empty:
 
-        st.subheader(
-            "💡 هل تقصد أحد هذه المنتجات؟"
+        st.markdown(
+            """
+            <div class="suggestions-title">
+                💡 منتجات مشابهة
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
         for _, suggestion in (
@@ -1335,13 +1676,21 @@ else:
                 suggestion[col_desc]
             ).strip()
 
-            with st.container(border=True):
+            st.markdown(
+                f"""
+                <div class="suggestion-card">
 
-                st.write(
-                    f"**{suggestion_description}**"
-                )
+                    <div class="suggestion-name">
+                        {suggestion_description}
+                    </div>
 
-                st.caption(
-                    f"الكود: {suggestion_code} | "
-                    f"الباركود: {suggestion_barcode}"
-                )
+                    <div class="suggestion-meta">
+                        الكود: {suggestion_code}
+                        &nbsp;&nbsp;•&nbsp;&nbsp;
+                        الباركود: {suggestion_barcode}
+                    </div>
+
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
