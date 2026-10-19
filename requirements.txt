@@ -1,10 +1,9 @@
-streamlit>=1.56.0
+streamlit
 pandas
 openpyxl
 requests
 pycryptodome
 Pillow
 numpy
-opencv-contrib-python-headless
-zxing-cpp
-streamlit-webrtc==0.70.1
+opencv-python-headless
+pyzbar
