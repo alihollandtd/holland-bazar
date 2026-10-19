@@ -41,86 +41,125 @@ st.markdown(
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
 
 :root {
-    --ink: #17233b;
-    --muted: #64718a;
-    --line: #dde3ec;
-    --canvas: #eaeff5;
-    --card: #ffffff;
-    --brand: #f26b21;
-    --ok: #16794c;      --ok-bg: #e3f4ea;
-    --low: #9a5b00;     --low-bg: #fdf0d3;
-    --out: #b3261e;     --out-bg: #fde7e5;
+    --bg: #0a0e16;
+    --surface: #111826;
+    --surface-2: #161f30;
+    --line: #232d42;
+    --text: #e8ecf4;
+    --muted: #8b97ad;
+    --brand: #ff7a2f;
+    --ok: #34d399;   --ok-bg: rgba(52,211,153,.10);   --ok-line: rgba(52,211,153,.35);
+    --low: #fbbf24;  --low-bg: rgba(251,191,36,.10);  --low-line: rgba(251,191,36,.35);
+    --out: #f87171;  --out-bg: rgba(248,113,113,.10); --out-line: rgba(248,113,113,.35);
 }
 
 html, body, .stApp, [class*="css"] {
     font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
 }
-.stApp { background: var(--canvas); color: var(--ink); direction: rtl; text-align: right; }
+.stApp {
+    background:
+        radial-gradient(900px 380px at 50% -120px, rgba(255,122,47,.16), transparent 70%),
+        var(--bg);
+    color: var(--text);
+    direction: rtl;
+    text-align: right;
+}
 
 /* hide Streamlit chrome */
 #MainMenu, footer, header[data-testid="stHeader"], [data-testid="stToolbar"] { display: none; }
-.block-container { max-width: 560px; padding: 1rem 1rem 3rem; }
+.block-container { max-width: 640px; padding: 0 1.1rem 4rem; }
 
-/* top bar */
-.topbar {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--ink); color: #fff;
-    border-radius: 16px; padding: 14px 18px; margin-bottom: 16px;
+/* navigation bar */
+.nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 2px; border-bottom: 1px solid var(--line); margin-bottom: 34px;
 }
-.topbar .logo {
-    width: 42px; height: 42px; border-radius: 12px; background: var(--brand);
-    display: grid; place-items: center; font-size: 22px; flex: none;
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand .logo {
+    width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+    background: linear-gradient(145deg, #ff9a4d, #ff6a1f); font-size: 20px;
+    box-shadow: 0 6px 20px rgba(255,122,47,.35);
 }
-.topbar .name { font-size: 18px; font-weight: 700; line-height: 1.2; }
-.topbar .sub  { font-size: 13px; color: #aab6cd; }
+.brand .name { font-size: 17px; font-weight: 700; letter-spacing: .2px; }
+.brand .name span { color: var(--muted); font-weight: 500; }
+.live { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
+        border: 1px solid var(--line); background: var(--surface); padding: 6px 12px; border-radius: 999px; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 
-/* search box */
+/* hero */
+.hero h1 { font-size: 34px; font-weight: 700; line-height: 1.35; margin: 0 0 8px; letter-spacing: -.3px; }
+.hero p  { font-size: 16px; color: var(--muted); margin: 0 0 22px; line-height: 1.7; }
+
+/* search */
 [data-testid="stTextInput"] label { display: none; }
+[data-testid="stTextInput"] > div > div { background: transparent; border: none; }
 [data-testid="stTextInput"] input {
-    height: 54px; font-size: 18px; border-radius: 14px;
-    border: 2px solid var(--line); background: var(--card); color: var(--ink);
-    padding: 0 16px; font-family: inherit; direction: rtl;
+    height: 58px; font-size: 18px; border-radius: 14px; padding: 0 18px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--text);
+    font-family: inherit; direction: rtl; transition: border-color .15s, box-shadow .15s;
 }
-[data-testid="stTextInput"] input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(242,107,33,.18); }
+[data-testid="stTextInput"] input::placeholder { color: #5f6b82; }
+[data-testid="stTextInput"] input:focus {
+    border-color: var(--brand); box-shadow: 0 0 0 4px rgba(255,122,47,.16); outline: none;
+}
 
 /* product card */
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-top: 16px; }
-.product-name { font-size: 21px; font-weight: 700; line-height: 1.5; margin: 0 0 12px; }
-.ids { display: flex; gap: 10px; flex-wrap: wrap; }
-.id-box { flex: 1 1 140px; background: var(--canvas); border-radius: 10px; padding: 8px 12px; }
-.id-box .k { font-size: 12px; color: var(--muted); }
-.id-box .v { font-size: 16px; font-weight: 600; direction: ltr; text-align: right; word-break: break-all; }
+.card {
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--line); border-radius: 18px; padding: 22px; margin-top: 22px;
+}
+.product-name { font-size: 22px; font-weight: 700; line-height: 1.55; margin: 0 0 16px; color: var(--text); }
+.ids { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 480px) { .ids { grid-template-columns: 1fr; } }
+.id-box { background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+.id-box .k { font-size: 12.5px; color: var(--muted); margin-bottom: 2px; }
+.id-box .v { font-size: 16px; font-weight: 600; direction: ltr; text-align: right; word-break: break-all;
+             font-variant-numeric: tabular-nums; }
 
 /* stock panel */
-.stock { border-radius: 16px; padding: 18px 20px; margin-top: 16px;
-         display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.stock .num { font-size: 56px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
-.stock .lbl { font-size: 14px; opacity: .85; }
-.stock .badge { font-size: 15px; font-weight: 600; padding: 6px 14px; border-radius: 999px; background: rgba(255,255,255,.7); }
-.stock.ok  { background: var(--ok-bg);  color: var(--ok); }
-.stock.low { background: var(--low-bg); color: var(--low); }
-.stock.out { background: var(--out-bg); color: var(--out); }
+.stock {
+    border-radius: 18px; padding: 22px 24px; margin-top: 14px; border: 1px solid;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.stock .num { font-size: 64px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stock .lbl { font-size: 14px; color: var(--muted); margin-top: 6px; }
+.stock .badge {
+    display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 600;
+    padding: 8px 16px; border-radius: 999px; border: 1px solid; background: rgba(0,0,0,.25);
+}
+.stock .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.stock.ok  { background: var(--ok-bg);  border-color: var(--ok-line);  color: var(--ok); }
+.stock.low { background: var(--low-bg); border-color: var(--low-line); color: var(--low); }
+.stock.out { background: var(--out-bg); border-color: var(--out-line); color: var(--out); }
+.stock .badge { border-color: currentColor; }
 
 /* image */
-.section-title { font-size: 15px; font-weight: 600; color: var(--muted); margin: 22px 2px 8px; }
-[data-testid="stImage"] img { border-radius: 14px; background: #fff; border: 1px solid var(--line); }
-.notice { background: var(--card); border: 1px dashed var(--line); border-radius: 14px;
-          padding: 18px; text-align: center; color: var(--muted); font-size: 15px; }
+.section-title { font-size: 15px; font-weight: 600; color: var(--muted); margin: 28px 2px 10px; }
+[data-testid="stImage"] img {
+    border-radius: 16px; background: #fff; border: 1px solid var(--line);
+}
+[data-testid="stImage"] figcaption, [data-testid="stCaptionContainer"] { color: var(--muted) !important; text-align: right; }
+.notice { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px;
+          padding: 22px; text-align: center; color: var(--muted); font-size: 15px; }
+
+/* spinner */
+[data-testid="stSpinner"] { color: var(--muted); }
 
 /* empty / error states */
-.empty { text-align: center; color: var(--muted); padding: 40px 10px; font-size: 16px; line-height: 1.8; }
-.empty .big { font-size: 44px; }
-.error-box { background: var(--out-bg); color: var(--out); border-radius: 14px; padding: 14px 16px;
-             margin-top: 16px; font-weight: 600; }
+.empty { text-align: center; color: var(--muted); padding: 44px 10px 20px; font-size: 15.5px; line-height: 1.9; }
+.empty .big { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 18px; display: grid; place-items: center;
+              font-size: 28px; background: var(--surface); border: 1px solid var(--line); }
+.error-box { background: var(--out-bg); border: 1px solid var(--out-line); color: var(--out);
+             border-radius: 14px; padding: 14px 18px; margin-top: 22px; font-weight: 600; }
 
 /* suggestion buttons */
 .stButton > button {
     width: 100%; justify-content: flex-start; text-align: right; border-radius: 12px;
-    border: 1px solid var(--line); background: var(--card); color: var(--ink);
-    padding: 10px 14px; font-family: inherit; min-height: 48px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--text);
+    padding: 10px 16px; font-family: inherit; min-height: 50px; transition: border-color .15s, background .15s;
 }
-.stButton > button:hover { border-color: var(--brand); color: var(--brand); }
-.stButton > button:focus-visible { outline: 3px solid rgba(242,107,33,.4); }
+.stButton > button:hover { border-color: var(--brand); background: var(--surface-2); color: #fff; }
+.stButton > button:focus-visible { outline: 3px solid rgba(255,122,47,.45); }
 </style>
 """,
     unsafe_allow_html=True,
@@ -362,12 +401,16 @@ def pick_suggestion(value):
 
 st.markdown(
     """
-    <div class="topbar">
-        <div class="logo">📦</div>
-        <div>
-            <div class="name">Holland Bazar T&amp;D</div>
-            <div class="sub">البحث عن المنتجات والمخزون</div>
+    <div class="nav">
+        <div class="brand">
+            <div class="logo">📦</div>
+            <div class="name">Holland Bazar <span>T&amp;D</span></div>
         </div>
+        <div class="live"><i></i> متصل بقاعدة البيانات</div>
+    </div>
+    <div class="hero">
+        <h1>تحقق من المخزون<br>في ثوانٍ</h1>
+        <p>أدخل الباركود أو كود المنتج لعرض الكمية المتوفرة وصورة المنتج.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -386,7 +429,7 @@ if df.empty:
 search_query = st.text_input(
     "بحث",
     key="main_search",
-    placeholder="🔍  امسح أو اكتب الباركود أو الكود",
+    placeholder="🔍  الباركود أو الكود",
 ).strip()
 
 if not search_query:
@@ -394,8 +437,8 @@ if not search_query:
         """
         <div class="empty">
             <div class="big">🔎</div>
-            اكتب الباركود أو الكود في الحقل أعلاه<br>
-            لعرض الكمية والصورة
+            ابدأ بكتابة الباركود أو الكود<br>
+            وستظهر النتيجة هنا
         </div>
         """,
         unsafe_allow_html=True,
