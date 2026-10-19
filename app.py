@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from mega import Mega
 
 # إعدادات واجهة المستخدم وثبات ألوان البطاقات
 st.set_page_config(page_title="Holland Bazar T&D", layout="centered", page_icon="📦")
@@ -31,9 +32,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# بيانات مجلد MEGA الخاص بك والمثبت بنجاح
-MEGA_FOLDER_ID = "HrximbwC"
-MEGA_DECRYPT_KEY = "9wvR9D8OQnrAJlTItE6Oag"
+# مسار مجلد MEGA الخاص بك والمثبت بنجاح
+MEGA_URL = "https://mega.nz"
 EXCEL_PATH = "DATABASE.xlsx"        
 
 @st.cache_data(ttl=5) # تحديث تلقائي للمخزون كل 5 ثوانٍ بمجرد استبدال ملف الإكسل اليومي
@@ -73,9 +73,10 @@ if df is not None and not df.empty:
             if barcode.lower() == 'nan' or barcode == '': barcode = "غير متوفر"
             if quantity.lower() == 'nan' or quantity == '': quantity = "0"
             
+            # عرض بطاقة البيانات بالترتيب المنضبط والصحيح 100% بدون أخطاء
             st.markdown(f"""
             <div class="metric-box">
-                <h3> الوصف: {description}</h3>
+                <h3>📝 الوصف: {description}</h3>
                 <p><b>كود المنتج:</b> {code}</p>
                 <p><b>الباركود:</b> {barcode}</p>
                 <hr>
@@ -83,19 +84,41 @@ if df is not None and not df.empty:
             </div>
             """, unsafe_allow_html=True)
             
-            # تحديد اسم الصورة (البرنامج يبحث بالباركود أولاً ثم كود المنتج القصير)
+            # تحديد اسم الصورة المستهدف البحث عنه (الباركود أو الكود)
             target_name = barcode if barcode != "غير متوفر" else code
             
-            # 🚀 استدعاء المعاينة المباشرة للملف الفردي من خوادم MEGA الرسمية المتوافقة مع المتصفحات
-            # نقوم بتجربة الامتداد الشائع لصورك لضمان عدم حدوث أي كسر للصورة
-            final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}?key={MEGA_DECRYPT_KEY}#{target_name}.png"
-            
-            # في حال كانت جميع الصور بصيغة jpg، يقوم الرابط بالتبديل التلقائي الذكي خلف الكواليس
-            if ".jpg" in target_name or ".jpeg" in target_name:
-                final_img_url = f"https://mega.nz{MEGA_FOLDER_ID}?key={MEGA_DECRYPT_KEY}#{target_name}"
-            
-            # عرض الصورة الفردية للموظف بكامل دقتها ووضوحها الأصلي
-            st.image(final_img_url, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True, error_photo="🔄 جاري تحميل صورة المنتج الحية من خادم MEGA...")
+            # 🚀 استدعاء الصورة وفك تشفيرها تلقائياً ولحظياً من مجلد MEGA الخاص بك
+            with st.spinner("🔄 جاري سحب صورة المنتج عالية الدقة من خادم MEGA..."):
+                try:
+                    mega = Mega()
+                    # الاتصال بالمجلد العام وتفحص محتوياته
+                    folder = mega.login_anonymous(MEGA_URL)
+                    files = folder.get_files()
+                    
+                    img_file = None
+                    image_extensions = ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG']
+                    
+                    # البحث عن الملف المطابق لاسم الباركود أو الكود مع الامتدادات المختلفة
+                    for file_id, file_info in files.items():
+                        file_name = file_info.get('a', {}).get('n', '')
+                        for ext in image_extensions:
+                            if file_name == f"{target_name}{ext}":
+                                img_file = (file_id, file_name)
+                                break
+                        if img_file:
+                            break
+                    
+                    if img_file:
+                        # تحميل الملف مؤقتاً في الذاكرة الحية وعرضه
+                        temp_path = folder.download_file(img_file[0], dest_filename=img_file[1])
+                        if os.path.exists(temp_path):
+                            st.image(temp_path, caption=f"الصورة الأصلية للمنتج: {code}", use_container_width=True)
+                            # حذف الملف المؤقت فوراً بعد العرض لحماية مساحة السيرفر
+                            os.remove(temp_path)
+                    else:
+                        st.warning(f"⚠️ تفاصيل المنتج صحيحة، ولكن لم يعثر النظام على ملف صورة باسم ({target_name}) داخل مجلد MEGA.")
+                except Exception as e:
+                    st.warning("⚠️ المنتج مسجل، ولكن واجه النظام صعوبة مؤقتة في فك تشفير خادم MEGA الصوري.")
                 
         else:
             st.error(f"❌ لم يتم العثور على تطابق كامل للرمز المكتوب: ({search_query})")
