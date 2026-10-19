@@ -20,8 +20,7 @@ from Crypto.Util import Counter
 st.set_page_config(
     page_title="Holland Bazar T&D",
     page_icon="📦",
-    layout="wide",
-    initial_sidebar_state="collapsed",
+    layout="centered",
 )
 
 
@@ -40,433 +39,104 @@ MEGA_API = "https://g.api.mega.co.nz/cs"
 
 
 # ============================================================
-# PROFESSIONAL UI
+# CSS
 # ============================================================
 
 st.markdown(
     """
     <style>
-
-    /* ======================================================
-       GLOBAL
-       ====================================================== */
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
 
     .stApp {
         direction: rtl;
-        background: #0b0f14;
-    }
-
-    .main .block-container {
-        max-width: 1100px;
-        padding-top: 2rem;
-        padding-bottom: 4rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-
-    /* ======================================================
-       HEADER
-       ====================================================== */
-
-    .app-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: linear-gradient(
-            135deg,
-            #172033 0%,
-            #111827 100%
-        );
-        border: 1px solid #263449;
-        border-radius: 18px;
-        padding: 22px 26px;
-        margin-bottom: 22px;
-        box-shadow: 0 8px 30px rgba(0,0,0,.20);
-    }
-
-    .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .brand-icon {
-        width: 46px;
-        height: 46px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #166534;
-        border-radius: 13px;
-        font-size: 24px;
-    }
-
-    .brand-title {
-        font-size: 25px;
-        font-weight: 800;
-        color: #f8fafc;
-        line-height: 1.2;
-    }
-
-    .brand-subtitle {
-        font-size: 13px;
-        color: #94a3b8;
-        margin-top: 4px;
-    }
-
-
-    /* ======================================================
-       SEARCH AREA
-       ====================================================== */
-
-    .search-section {
-        background: #111827;
-        border: 1px solid #263449;
-        border-radius: 18px;
-        padding: 22px 24px 18px 24px;
-        margin-bottom: 22px;
-    }
-
-    .search-title {
-        color: #f8fafc;
-        font-size: 19px;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    .search-hint {
-        color: #64748b;
-        font-size: 13px;
-        margin-bottom: 12px;
-    }
-
-    div[data-testid="stTextInput"] input {
-        direction: ltr !important;
-        text-align: center !important;
-        background: #0b1220 !important;
-        color: #f8fafc !important;
-        border: 2px solid #334155 !important;
-        border-radius: 12px !important;
-        min-height: 54px !important;
-        font-size: 19px !important;
-        font-weight: 600 !important;
-    }
-
-    div[data-testid="stTextInput"] input:focus {
-        border-color: #22c55e !important;
-        box-shadow: 0 0 0 3px rgba(34,197,94,.12) !important;
-    }
-
-
-    /* ======================================================
-       STATUS
-       ====================================================== */
-
-    .status-found {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: rgba(22,101,52,.16);
-        border: 1px solid #166534;
-        border-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 18px;
-        color: #86efac;
-        font-weight: 700;
-    }
-
-    .status-icon {
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #166534;
-        border-radius: 50%;
-    }
-
-
-    /* ======================================================
-       PRODUCT AREA
-       ====================================================== */
-
-    .product-card {
-        background: #111827;
-        border: 1px solid #263449;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 8px 30px rgba(0,0,0,.18);
-    }
-
-    .product-card-header {
-        padding: 20px 22px;
-        border-bottom: 1px solid #263449;
-        background: #151e2d;
-    }
-
-    .product-label {
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
-
-    .product-name {
-        color: #f8fafc;
-        font-size: 23px;
-        font-weight: 800;
-        line-height: 1.4;
-    }
-
-
-    /* ======================================================
-       INFO CARDS
-       ====================================================== */
-
-    .info-card {
-        background: #0b1220;
-        border: 1px solid #263449;
-        border-radius: 12px;
-        padding: 15px 17px;
-        height: 100%;
-    }
-
-    .info-label {
-        color: #64748b;
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 7px;
-    }
-
-    .info-value {
-        color: #e2e8f0;
-        font-size: 17px;
-        font-weight: 700;
-        direction: ltr;
         text-align: right;
-        word-break: break-word;
+        font-family: 'Cairo', sans-serif !important;
+        background-color: #f8fafc;
     }
 
+    /* Hide Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
 
-    /* ======================================================
-       QUANTITY
-       ====================================================== */
-
-    .quantity-card {
-        background: linear-gradient(
-            135deg,
-            #14532d,
-            #166534
-        );
-        border: 1px solid #22c55e;
+    .main-title {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: white;
+        padding: 24px;
         border-radius: 16px;
-        padding: 20px;
         text-align: center;
-        min-height: 145px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        letter-spacing: -0.5px;
     }
 
-    .quantity-label {
-        color: #bbf7d0;
-        font-size: 13px;
-        font-weight: 700;
-        margin-bottom: 8px;
+    /* Input styling */
+    .stTextInput input {
+        direction: rtl;
+        text-align: right;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        padding: 12px 16px;
+        font-family: 'Cairo', sans-serif;
+        font-size: 16px;
+        background-color: #ffffff;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    }
+    .stTextInput input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Cards styling */
+    div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+        margin-bottom: 16px;
+    }
+
+    .quantity-box {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        margin: 20px 0;
+        box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        border: 1px solid #334155;
     }
 
     .quantity-number {
-        color: #ffffff;
         font-size: 42px;
-        font-weight: 900;
-        line-height: 1;
-    }
-
-    .quantity-unit {
-        color: #bbf7d0;
-        font-size: 12px;
-        margin-top: 8px;
-    }
-
-
-    /* ======================================================
-       IMAGE AREA
-       ====================================================== */
-
-    .image-section {
-        background: #111827;
-        border: 1px solid #263449;
-        border-radius: 18px;
-        padding: 18px;
-        box-shadow: 0 8px 30px rgba(0,0,0,.18);
-    }
-
-    .image-section-title {
-        color: #f8fafc;
-        font-size: 17px;
         font-weight: 800;
-        margin-bottom: 14px;
-        text-align: right;
+        color: #38bdf8;
+        line-height: 1.2;
+        margin-bottom: 4px;
     }
 
-    .image-preview {
-        background: #080c12;
-        border: 1px solid #263449;
-        border-radius: 14px;
-        min-height: 420px;
-        max-height: 520px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        padding: 12px;
-    }
-
-    /* Keep Streamlit images from becoming enormous */
-    div[data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        background: #080c12;
-        border: 1px solid #263449;
-        border-radius: 14px;
-        padding: 12px;
-        min-height: 300px;
-        max-height: 520px;
-        overflow: hidden;
-    }
-
-    div[data-testid="stImage"] img {
-        max-height: 480px !important;
-        max-width: 100% !important;
-        width: auto !important;
-        height: auto !important;
-        object-fit: contain !important;
-        border-radius: 8px;
-    }
-
-
-    /* ======================================================
-       IMAGE CAPTION
-       ====================================================== */
-
-    .image-file {
-        color: #64748b;
-        text-align: center;
-        font-size: 12px;
-        margin-top: 9px;
-        direction: ltr;
-    }
-
-
-    /* ======================================================
-       EMPTY / ERROR
-       ====================================================== */
-
-    .empty-box {
-        background: #111827;
-        border: 1px solid #263449;
-        border-radius: 16px;
-        padding: 35px 25px;
-        text-align: center;
+    .quantity-label {
         color: #94a3b8;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
     }
 
-    .empty-icon {
-        font-size: 40px;
-        margin-bottom: 12px;
+    /* Subheaders styling */
+    .stSubheader {
+        font-family: 'Cairo', sans-serif !important;
+        font-weight: 700 !important;
+        color: #1e293b !important;
     }
 
-    .empty-title {
-        color: #e2e8f0;
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 7px;
+    /* Images */
+    img {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
     }
-
-
-    /* ======================================================
-       SUGGESTIONS
-       ====================================================== */
-
-    .suggestion-title {
-        color: #e2e8f0;
-        font-size: 17px;
-        font-weight: 800;
-        margin: 24px 0 12px 0;
-    }
-
-
-    /* ======================================================
-       STREAMLIT ELEMENT SPACING
-       ====================================================== */
-
-    div[data-testid="stVerticalBlock"] {
-        gap: 0.65rem;
-    }
-
-    .stAlert {
-        border-radius: 12px !important;
-    }
-
-
-    /* ======================================================
-       MOBILE
-       ====================================================== */
-
-    @media (max-width: 700px) {
-
-        .main .block-container {
-            padding: 1rem 0.8rem 3rem 0.8rem;
-        }
-
-        .app-header {
-            padding: 17px;
-            border-radius: 14px;
-        }
-
-        .brand-title {
-            font-size: 20px;
-        }
-
-        .brand-subtitle {
-            font-size: 11px;
-        }
-
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-        }
-
-        .search-section {
-            padding: 16px;
-            border-radius: 14px;
-        }
-
-        .product-name {
-            font-size: 19px;
-        }
-
-        .quantity-number {
-            font-size: 36px;
-        }
-
-        div[data-testid="stImage"] {
-            min-height: 250px;
-            max-height: 420px;
-        }
-
-        div[data-testid="stImage"] img {
-            max-height: 390px !important;
-        }
-    }
-
     </style>
     """,
     unsafe_allow_html=True,
@@ -478,6 +148,9 @@ st.markdown(
 # ============================================================
 
 def mega_b64_decode(value):
+    """
+    Decode MEGA's URL-safe base64 format.
+    """
 
     if isinstance(value, str):
         value = value.encode("utf-8")
@@ -487,7 +160,20 @@ def mega_b64_decode(value):
     return base64.urlsafe_b64decode(value)
 
 
+def mega_b64_encode(value):
+    """
+    Encode bytes using MEGA's URL-safe base64.
+    """
+
+    return base64.urlsafe_b64encode(
+        value
+    ).decode("utf-8").rstrip("=")
+
+
 def base64_to_a32(value):
+    """
+    MEGA base64 -> tuple of unsigned 32-bit integers.
+    """
 
     raw = mega_b64_decode(value)
 
@@ -503,6 +189,9 @@ def base64_to_a32(value):
 
 
 def a32_to_bytes(values):
+    """
+    Tuple/list of 32-bit integers -> bytes.
+    """
 
     return struct.pack(
         ">" + ("I" * len(values)),
@@ -510,10 +199,16 @@ def a32_to_bytes(values):
     )
 
 
-def decrypt_key(
-    encrypted_key,
-    key,
-):
+# ============================================================
+# MEGA CRYPTO
+# ============================================================
+
+def decrypt_key(encrypted_key, key):
+    """
+    Decrypt a MEGA node key using AES-ECB.
+
+    This is the same key operation used by MEGA clients.
+    """
 
     encrypted_bytes = a32_to_bytes(
         encrypted_key
@@ -538,10 +233,15 @@ def decrypt_key(
     )
 
 
-def decrypt_attributes(
-    encrypted_attributes,
-    key,
-):
+def decrypt_attributes(encrypted_attributes, key):
+    """
+    Decrypt MEGA file/folder attributes.
+
+    Valid plaintext starts with:
+        MEGA
+
+    followed by JSON.
+    """
 
     encrypted = mega_b64_decode(
         encrypted_attributes
@@ -561,6 +261,7 @@ def decrypt_attributes(
         encrypted
     )
 
+    # Remove zero padding.
     decrypted = decrypted.rstrip(
         b"\x00"
     )
@@ -570,14 +271,26 @@ def decrypt_attributes(
             "Invalid MEGA attribute prefix"
         )
 
+    json_data = decrypted[4:]
+
     return json.loads(
-        decrypted[4:].decode(
-            "utf-8"
-        )
+        json_data.decode("utf-8")
     )
 
 
+# ============================================================
+# MEGA URL
+# ============================================================
+
 def parse_mega_folder_url(url):
+    """
+    Extract:
+        folder handle
+        folder encryption key
+    """
+
+    # Modern format:
+    # https://mega.nz/folder/ID#KEY
 
     match = re.search(
         r"mega\.nz/folder/([^#/?]+)#([^/?]+)",
@@ -586,15 +299,40 @@ def parse_mega_folder_url(url):
 
     if match:
 
+        folder_handle = match.group(1)
+        folder_key = match.group(2)
+
         return (
-            match.group(1),
-            match.group(2),
+            folder_handle,
+            folder_key,
+        )
+
+    # Legacy format:
+    # https://mega.nz/#F!ID!KEY
+
+    match = re.search(
+        r"mega\.nz/#F!([^!#/?]+)[!#]([^/?]+)",
+        url,
+    )
+
+    if match:
+
+        folder_handle = match.group(1)
+        folder_key = match.group(2)
+
+        return (
+            folder_handle,
+            folder_key,
         )
 
     raise ValueError(
         "رابط مجلد MEGA غير صالح."
     )
 
+
+# ============================================================
+# MEGA API REQUEST
+# ============================================================
 
 def mega_api_request(
     data,
@@ -605,7 +343,13 @@ def mega_api_request(
         "id": 0,
     }
 
+    # IMPORTANT:
+    #
+    # Public folder requests need the folder handle
+    # in the query string.
+    #
     if folder_handle:
+
         params["n"] = folder_handle
 
     response = requests.post(
@@ -625,7 +369,10 @@ def mega_api_request(
             f"MEGA API error: {result}"
         )
 
-    if not isinstance(result, list) or not result:
+    if (
+        not isinstance(result, list)
+        or len(result) == 0
+    ):
 
         raise RuntimeError(
             "MEGA returned an empty response."
@@ -641,7 +388,7 @@ def mega_api_request(
 
 
 # ============================================================
-# MEGA FILE LIST
+# GET PUBLIC FOLDER NODES
 # ============================================================
 
 @st.cache_data(
@@ -656,10 +403,13 @@ def get_mega_nodes():
         )
     )
 
+    # The key in the public URL is itself
+    # the shared folder key.
     shared_key = base64_to_a32(
         folder_key_text
     )
 
+    # Ask MEGA for the complete public folder tree.
     response = mega_api_request(
         {
             "a": "f",
@@ -679,6 +429,8 @@ def get_mega_nodes():
 
     for node in nodes:
 
+        # 0 = file
+        # 1 = folder
         if node.get("t") not in (0, 1):
             continue
 
@@ -696,6 +448,14 @@ def get_mega_nodes():
             continue
 
         try:
+
+            # ------------------------------------------------
+            # Public-folder node keys have this form:
+            #
+            #     something:ENCRYPTED_KEY
+            #
+            # We need the part after ":".
+            # ------------------------------------------------
 
             if ":" in encrypted_node_key:
 
@@ -716,10 +476,22 @@ def get_mega_nodes():
                 encrypted_key_text
             )
 
+            # ------------------------------------------------
+            # Decrypt node key with shared folder key.
+            # ------------------------------------------------
+
             node_key = decrypt_key(
                 encrypted_key,
                 shared_key,
             )
+
+            # ------------------------------------------------
+            # File nodes use:
+            #
+            # key[0:4] XOR key[4:8]
+            #
+            # for the AES attribute/file key.
+            # ------------------------------------------------
 
             if node.get("t") == 0:
 
@@ -735,7 +507,12 @@ def get_mega_nodes():
 
             else:
 
+                # Folder nodes use the node key directly.
                 file_key = node_key
+
+            # ------------------------------------------------
+            # Decrypt filename.
+            # ------------------------------------------------
 
             attributes = decrypt_attributes(
                 encrypted_attributes,
@@ -762,6 +539,7 @@ def get_mega_nodes():
             )
 
         except Exception:
+            # Ignore individual bad/non-file nodes.
             continue
 
     return result
@@ -799,7 +577,7 @@ def find_mega_image(
             value.lower()
         )
 
-    extensions = (
+    image_extensions = (
         ".png",
         ".jpg",
         ".jpeg",
@@ -812,11 +590,14 @@ def find_mega_image(
         for node in nodes
         if node["type"] == 0
         and node["name"].lower().endswith(
-            extensions
+            image_extensions
         )
     ]
 
-    # Exact match first
+    # --------------------------------------------------------
+    # Exact filename match
+    # --------------------------------------------------------
+
     for identifier in identifiers:
 
         for node in files:
@@ -826,9 +607,13 @@ def find_mega_image(
             )[0].lower()
 
             if stem == identifier:
+
                 return node
 
-    # Partial match second
+    # --------------------------------------------------------
+    # Filename contains code/barcode
+    # --------------------------------------------------------
+
     for identifier in identifiers:
 
         for node in files:
@@ -838,13 +623,14 @@ def find_mega_image(
             )[0].lower()
 
             if identifier in stem:
+
                 return node
 
     return None
 
 
 # ============================================================
-# DOWNLOAD IMAGE
+# DOWNLOAD ONE MEGA FILE
 # ============================================================
 
 @st.cache_data(
@@ -862,6 +648,10 @@ def download_mega_image(
         )
     )
 
+    # --------------------------------------------------------
+    # Request a download URL for this public-folder file.
+    # --------------------------------------------------------
+
     response = mega_api_request(
         {
             "a": "g",
@@ -873,20 +663,37 @@ def download_mega_image(
 
     download_url = response.get("g")
 
-    if not download_url:
+    file_size = response.get(
+        "s",
+        0,
+    )
 
+    encrypted_attributes = response.get(
+        "at"
+    )
+
+    if not download_url:
         raise RuntimeError(
             "MEGA did not return a download URL."
         )
 
+    if not encrypted_attributes:
+        raise RuntimeError(
+            "MEGA did not return file attributes."
+        )
+
+    # --------------------------------------------------------
+    # The node key is 8 x 32-bit values.
+    # --------------------------------------------------------
+
     key = tuple(node_key)
 
     if len(key) < 8:
-
         raise RuntimeError(
             "Invalid MEGA file key."
         )
 
+    # File encryption key.
     aes_key_words = (
         key[0] ^ key[4],
         key[1] ^ key[5],
@@ -898,9 +705,17 @@ def download_mega_image(
         aes_key_words
     )
 
+    # MEGA CTR IV.
+    iv_words = (
+        key[4],
+        key[5],
+        0,
+        0,
+    )
+
     counter_value = (
-        (key[4] << 32)
-        + key[5]
+        (iv_words[0] << 32)
+        + iv_words[1]
     ) << 64
 
     counter = Counter.new(
@@ -913,6 +728,10 @@ def download_mega_image(
         AES.MODE_CTR,
         counter=counter,
     )
+
+    # --------------------------------------------------------
+    # Download encrypted file.
+    # --------------------------------------------------------
 
     response = requests.get(
         download_url,
@@ -928,13 +747,16 @@ def download_mega_image(
         chunk_size=1024 * 1024
     ):
 
-        if chunk:
+        if not chunk:
+            continue
 
-            output.write(
-                decryptor.decrypt(
-                    chunk
-                )
-            )
+        decrypted = decryptor.decrypt(
+            chunk
+        )
+
+        output.write(
+            decrypted
+        )
 
     return output.getvalue()
 
@@ -980,7 +802,7 @@ def load_data():
     except Exception as e:
 
         st.error(
-            f"خطأ في قراءة قاعدة البيانات: {e}"
+            f"خطأ في قراءة DATABASE.xlsx: {e}"
         )
 
         return None
@@ -991,31 +813,9 @@ def load_data():
 # ============================================================
 
 st.markdown(
-    """
-    <div class="app-header">
-
-        <div class="brand">
-
-            <div class="brand-icon">
-                📦
-            </div>
-
-            <div>
-
-                <div class="brand-title">
-                    Holland Bazar T&D
-                </div>
-
-                <div class="brand-subtitle">
-                    نظام البحث عن المنتجات والمخزون
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-    """,
+    '<div class="main-title">'
+    'Holland Bazar T&D 📦'
+    '</div>',
     unsafe_allow_html=True,
 )
 
@@ -1034,6 +834,7 @@ if df is None:
 
     st.stop()
 
+
 if df.empty:
 
     st.error(
@@ -1044,69 +845,26 @@ if df.empty:
 
 
 # ============================================================
-# SEARCH SECTION
+# SEARCH
 # ============================================================
-
-st.markdown(
-    """
-    <div class="search-section">
-
-        <div class="search-title">
-            🔎 البحث عن منتج
-        </div>
-
-        <div class="search-hint">
-            أدخل الباركود أو كود المنتج
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
 
 search_query = st.text_input(
-    "الباركود أو الكود",
+    "🔍 أدخل الباركود أو الرمز (كود) للبحث:",
     key="main_search",
-    placeholder="مثال: 6932308668058",
-    label_visibility="collapsed",
-)
+).strip()
 
-
-search_query = search_query.strip()
-
-
-# ============================================================
-# NO SEARCH
-# ============================================================
 
 if not search_query:
 
-    st.markdown(
-        """
-        <div class="empty-box">
-
-            <div class="empty-icon">
-                🔍
-            </div>
-
-            <div class="empty-title">
-                ابدأ البحث عن منتج
-            </div>
-
-            <div>
-                أدخل الباركود أو كود المنتج في مربع البحث أعلاه
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.info(
+        "👆 أدخل الباركود أو الكود للبحث عن المنتج."
     )
 
     st.stop()
 
 
 # ============================================================
-# COLUMNS
+# DATABASE COLUMNS
 # ============================================================
 
 col_code = "0"
@@ -1116,7 +874,7 @@ col_qty = "3"
 
 
 # ============================================================
-# SEARCH DATABASE
+# EXACT MATCH
 # ============================================================
 
 matches = df[
@@ -1127,7 +885,7 @@ matches = df[
 
 
 # ============================================================
-# PRODUCT FOUND
+# FOUND
 # ============================================================
 
 if not matches.empty:
@@ -1150,7 +908,6 @@ if not matches.empty:
         row[col_qty]
     ).strip()
 
-
     if not barcode or barcode.lower() == "nan":
         barcode = "غير متوفر"
 
@@ -1162,286 +919,111 @@ if not matches.empty:
 
 
     # ========================================================
-    # FOUND STATUS
+    # PRODUCT INFORMATION
+    # ========================================================
+
+    with st.container(border=True):
+
+        st.subheader(
+            f"📦 {description}"
+        )
+
+        st.write(
+            f"**🔢 الكود:** {code}"
+        )
+
+        st.write(
+            f"**🏷️ الباركود:** {barcode}"
+        )
+
+
+    # ========================================================
+    # QUANTITY
     # ========================================================
 
     st.markdown(
-        """
-        <div class="status-found">
+        f"""
+        <div class="quantity-box">
 
-            <div class="status-icon">
-                ✓
+            <div class="quantity-number">
+                {quantity}
             </div>
 
-            تم العثور على المنتج
+            <div class="quantity-label">
+                الكمية المتوفرة
+            </div>
 
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-
-    # ========================================================
-    # MAIN TWO-COLUMN AREA
-    # ========================================================
-
-    info_column, image_column = st.columns(
-        [0.95, 1.05],
-        gap="large",
-    )
-
-
-    # ========================================================
-    # PRODUCT INFORMATION
-    # ========================================================
-
-    with info_column:
-
-        st.markdown(
-            """
-            <div class="product-card">
-
-                <div class="product-card-header">
-
-                    <div class="product-label">
-                        المنتج
-                    </div>
-
-                    <div class="product-name">
-            """,
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            description
-        )
-
-        st.markdown(
-            """
-                    </div>
-
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-
-        # -----------------------------------------------
-        # CODE
-        # -----------------------------------------------
-
-        st.markdown(
-            "<br>",
-            unsafe_allow_html=True,
-        )
-
-        code_col, barcode_col = st.columns(
-            2,
-            gap="medium",
-        )
-
-
-        with code_col:
-
-            st.markdown(
-                f"""
-                <div class="info-card">
-
-                    <div class="info-label">
-                        🔢 كود المنتج
-                    </div>
-
-                    <div class="info-value">
-                        {code}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-
-        with barcode_col:
-
-            st.markdown(
-                f"""
-                <div class="info-card">
-
-                    <div class="info-label">
-                        🏷️ الباركود
-                    </div>
-
-                    <div class="info-value">
-                        {barcode}
-                    </div>
-
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-
-        # -----------------------------------------------
-        # QUANTITY
-        # -----------------------------------------------
-
-        st.markdown(
-            "<br>",
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            f"""
-            <div class="quantity-card">
-
-                <div class="quantity-label">
-                    📦 الكمية المتوفرة
-                </div>
-
-                <div class="quantity-number">
-                    {quantity}
-                </div>
-
-                <div class="quantity-unit">
-                    وحدة في المخزون
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
 
     # ========================================================
     # IMAGE
     # ========================================================
 
-    with image_column:
+    st.subheader(
+        "🖼️ صورة المنتج"
+    )
 
-        st.markdown(
-            """
-            <div class="image-section">
+    try:
 
-                <div class="image-section-title">
-                    🖼️ صورة المنتج
-                </div>
+        with st.spinner(
+            "جاري البحث عن صورة المنتج..."
+        ):
 
-            </div>
-            """,
-            unsafe_allow_html=True,
+            nodes = get_mega_nodes()
+
+            image_node = find_mega_image(
+                nodes,
+                code,
+                barcode,
+            )
+
+        if image_node is None:
+
+            st.warning(
+                "📷 لم يتم العثور على صورة بهذا "
+                "الكود أو الباركود داخل مجلد MEGA."
+            )
+
+        else:
+
+            with st.spinner(
+                "جاري تحميل صورة المنتج..."
+            ):
+
+                image_bytes = (
+                    download_mega_image(
+                        image_node["handle"],
+                        image_node["key"],
+                    )
+                )
+
+            st.image(
+                image_bytes,
+                caption=image_node["name"],
+                use_container_width=True,
+            )
+
+    except Exception as e:
+
+        st.error(
+            f"❌ خطأ في تحميل صورة MEGA: {e}"
         )
 
 
-        try:
-
-            with st.spinner(
-                "جاري البحث عن صورة المنتج..."
-            ):
-
-                nodes = get_mega_nodes()
-
-                image_node = find_mega_image(
-                    nodes,
-                    code,
-                    barcode,
-                )
-
-
-            if image_node is None:
-
-                st.markdown(
-                    """
-                    <div class="empty-box">
-
-                        <div class="empty-icon">
-                            📷
-                        </div>
-
-                        <div class="empty-title">
-                            لا توجد صورة
-                        </div>
-
-                        <div>
-                            لم يتم العثور على صورة مرتبطة
-                            بهذا الكود أو الباركود.
-                        </div>
-
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-            else:
-
-                with st.spinner(
-                    "جاري تحميل الصورة..."
-                ):
-
-                    image_bytes = (
-                        download_mega_image(
-                            image_node["handle"],
-                            image_node["key"],
-                        )
-                    )
-
-
-                # The CSS above constrains this image.
-                st.image(
-                    image_bytes,
-                    use_container_width=False,
-                )
-
-
-                st.markdown(
-                    f"""
-                    <div class="image-file">
-                        {image_node["name"]}
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-
-        except Exception as e:
-
-            st.error(
-                f"❌ تعذر تحميل صورة المنتج: {e}"
-            )
-
-
 # ============================================================
-# PRODUCT NOT FOUND
+# NOT FOUND
 # ============================================================
 
 else:
 
-    st.markdown(
-        """
-        <div class="empty-box">
-
-            <div class="empty-icon">
-                🔎
-            </div>
-
-            <div class="empty-title">
-                لم يتم العثور على المنتج
-            </div>
-
-            <div>
-                لا يوجد منتج مطابق للباركود أو الكود المدخل.
-            </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.error(
+        "❌ لم يتم العثور على المنتج بهذا "
+        "الباركود أو الكود."
     )
-
-
-    # ========================================================
-    # SIMILAR PRODUCTS
-    # ========================================================
 
     similar = df[
         df[col_code].str.contains(
@@ -1451,7 +1033,7 @@ else:
             regex=False,
         )
         |
-        df[col_barcode].str.contains(
+        df[col_col_barcode if 'col_col_barcode' in locals() else col_barcode].str.contains(
             search_query,
             na=False,
             case=False,
@@ -1459,16 +1041,11 @@ else:
         )
     ]
 
-
     if not similar.empty:
 
-        st.markdown(
-            '<div class="suggestion-title">'
-            '💡 منتجات مشابهة'
-            '</div>',
-            unsafe_allow_html=True,
+        st.subheader(
+            "💡 هل تقصد أحد هذه المنتجات؟"
         )
-
 
         for _, suggestion in (
             similar.head(5).iterrows()
@@ -1486,16 +1063,13 @@ else:
                 suggestion[col_desc]
             ).strip()
 
-
-            with st.container(
-                border=True
-            ):
+            with st.container(border=True):
 
                 st.write(
                     f"**{suggestion_description}**"
                 )
 
                 st.caption(
-                    f"الكود: {suggestion_code}  •  "
+                    f"الكود: {suggestion_code} | "
                     f"الباركود: {suggestion_barcode}"
                 )
