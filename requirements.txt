@@ -6,4 +6,4 @@ pycryptodome>=3.20
 Pillow>=10
 numpy>=2.0
 opencv-python-headless>=4.10
-pyzbar>=0.1.9
+pyzbar==0.1.9
