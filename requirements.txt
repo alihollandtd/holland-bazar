@@ -1,6 +1,5 @@
-```text
 streamlit
 pandas
 openpyxl
-async-mega-py
-```
+requests
+pycryptodome
