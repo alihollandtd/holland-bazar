@@ -9,7 +9,6 @@ from io import BytesIO
 import requests
 import pandas as pd
 import streamlit as st
-import streamlit.components.v2 as components
 from PIL import Image
 from Crypto.Cipher import AES
 
@@ -507,518 +506,274 @@ def download_mega_image(node_handle, node_key):
 # supported-format constants from window.Html5QrcodeSupportedFormats.
 # ============================================================
 
-SCANNER_HTML = """
-<div class="scanner-shell">
-    <div class="scanner-top">
-        <div>
-            <div class="scanner-title">📷 ماسح الباركود</div>
-            <div class="scanner-caption">
-                استخدم الكاميرا الخلفية وقرّب الباركود داخل الإطار
-            </div>
-        </div>
-        <div id="scanner-status" class="scanner-status">جاهز</div>
-    </div>
 
-    <div id="scanner-reader"></div>
+# ============================================================
+# NATIVE CAMERA BARCODE SCANNER
+# ============================================================
 
-    <div class="scanner-actions">
-        <button id="scanner-start" class="scanner-primary">
-            تشغيل الكاميرا
-        </button>
-        <button id="scanner-stop" class="scanner-secondary" disabled>
-            إيقاف
-        </button>
-        <button id="scanner-file" class="scanner-secondary">
-            قراءة صورة
-        </button>
-        <input id="scanner-file-input" type="file" accept="image/*" hidden />
-    </div>
+from PIL import Image
+import numpy as np
+import cv2
 
-    <div class="scanner-instructions">
-        <b>لأفضل قراءة:</b>
-        اجعل الباركود مستقيماً، قريباً، ومضاءً جيداً.
-        لا تحتاج إلى الضغط على زر الالتقاط.
-    </div>
+try:
+    from pyzbar.pyzbar import decode as zbar_decode
+    from pyzbar.pyzbar import ZBarSymbol
+    ZBAR_AVAILABLE = True
+except Exception:
+    ZBAR_AVAILABLE = False
+    ZBarSymbol = None
 
-    <div id="scanner-result" class="scanner-result">
-        <div class="scanner-result-label">الباركود المقروء</div>
-        <div id="scanner-value"></div>
-    </div>
 
-    <div id="scanner-error" class="scanner-error"></div>
-</div>
-"""
+def barcode_candidates_from_image(uploaded_file):
+    if not uploaded_file or not ZBAR_AVAILABLE:
+        return []
 
-SCANNER_CSS = """
-.scanner-shell {
-    width: 100%;
-    box-sizing: border-box;
-    direction: rtl;
-    color: var(--st-text-color, #f8fafc);
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-.scanner-top {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:12px;
-}
-.scanner-title { font-size:20px; font-weight:850; }
-.scanner-caption { color:#94a3b8; font-size:12px; margin-top:4px; }
-.scanner-status {
-    border:1px solid rgba(34,197,94,.28);
-    background:rgba(34,197,94,.08);
-    color:#86efac;
-    border-radius:999px;
-    padding:7px 12px;
-    font-size:12px;
-    white-space:nowrap;
-}
-#scanner-reader {
-    width:100%;
-    min-height:300px;
-    overflow:hidden;
-    background:#020617;
-    border:1px solid #29425e;
-    border-radius:16px;
-}
-#scanner-reader video {
-    width:100% !important;
-    height:auto !important;
-    max-height:560px !important;
-    object-fit:cover !important;
-    border-radius:15px !important;
-}
-#scanner-reader__scan_region {
-    border:0 !important;
-}
-#scanner-reader__dashboard,
-#scanner-reader__header_message {
-    display:none !important;
-}
-.scanner-actions {
-    display:grid;
-    grid-template-columns:1.25fr 1fr 1fr;
-    gap:8px;
-    margin-top:10px;
-}
-.scanner-actions button {
-    min-height:45px;
-    border-radius:11px;
-    border:1px solid #29425e;
-    background:#0b1a2b;
-    color:#e5e7eb;
-    font-weight:800;
-    cursor:pointer;
-}
-.scanner-actions button:disabled { opacity:.45; cursor:not-allowed; }
-.scanner-primary {
-    background:linear-gradient(135deg,#22c55e,#15803d) !important;
-    color:#fff !important;
-    border:0 !important;
-}
-.scanner-instructions {
-    margin-top:10px;
-    padding:11px 13px;
-    border:1px solid #1c344c;
-    background:#081525;
-    border-radius:12px;
-    color:#94a3b8;
-    font-size:12px;
-    line-height:1.8;
-    text-align:center;
-}
-.scanner-result {
-    display:none;
-    margin-top:11px;
-    padding:14px;
-    border-radius:13px;
-    background:rgba(34,197,94,.08);
-    border:1px solid rgba(34,197,94,.30);
-    text-align:center;
-}
-.scanner-result.visible { display:block; }
-.scanner-result-label { color:#86efac; font-size:12px; }
-#scanner-value {
-    margin-top:4px;
-    color:#fff;
-    font-size:25px;
-    font-weight:900;
-    direction:ltr;
-    word-break:break-all;
-}
-.scanner-error {
-    display:none;
-    margin-top:10px;
-    padding:11px;
-    border-radius:11px;
-    background:rgba(239,68,68,.08);
-    border:1px solid rgba(239,68,68,.30);
-    color:#fecaca;
-    font-size:12px;
-    line-height:1.8;
-}
-.scanner-error.visible { display:block; }
-@media (max-width:650px) {
-    .scanner-actions { grid-template-columns:1fr 1fr; }
-    .scanner-primary { grid-column:1 / -1; }
-}
-"""
+    try:
+        original = Image.open(uploaded_file).convert("RGB")
+    except Exception:
+        return []
 
-SCANNER_JS = r"""
-export default function(component) {
-    const { parentElement, setTriggerValue } = component;
+    max_dimension = 2400
+    if max(original.size) > max_dimension:
+        scale = max_dimension / max(original.size)
+        original = original.resize(
+            (
+                max(1, int(original.width * scale)),
+                max(1, int(original.height * scale)),
+            ),
+            Image.Resampling.LANCZOS,
+        )
 
-    const reader = parentElement.querySelector("#scanner-reader");
-    const startButton = parentElement.querySelector("#scanner-start");
-    const stopButton = parentElement.querySelector("#scanner-stop");
-    const fileButton = parentElement.querySelector("#scanner-file");
-    const fileInput = parentElement.querySelector("#scanner-file-input");
-    const status = parentElement.querySelector("#scanner-status");
-    const resultBox = parentElement.querySelector("#scanner-result");
-    const resultValue = parentElement.querySelector("#scanner-value");
-    const errorBox = parentElement.querySelector("#scanner-error");
+    rgb = np.array(original)
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
 
-    let scanner = null;
-    let running = false;
-    let reported = false;
+    variants = [
+        ("original", rgb),
+        ("gray", gray),
+        (
+            "upscaled",
+            cv2.resize(
+                gray,
+                None,
+                fx=2.0,
+                fy=2.0,
+                interpolation=cv2.INTER_CUBIC,
+            ),
+        ),
+    ]
 
-    const setStatus = value => { status.textContent = value; };
+    clahe = cv2.createCLAHE(
+        clipLimit=2.5,
+        tileGridSize=(8, 8),
+    )
+    variants.append(("contrast", clahe.apply(gray)))
 
-    function showError(value) {
-        errorBox.textContent = value;
-        errorBox.classList.add("visible");
-        setStatus("تعذر التشغيل");
-    }
+    blur = cv2.GaussianBlur(gray, (0, 0), 2.0)
+    variants.append(
+        (
+            "sharpened",
+            cv2.addWeighted(
+                gray, 1.7, blur, -0.7, 0
+            ),
+        )
+    )
 
-    function clearError() {
-        errorBox.textContent = "";
-        errorBox.classList.remove("visible");
-    }
+    _, otsu = cv2.threshold(
+        gray,
+        0,
+        255,
+        cv2.THRESH_BINARY + cv2.THRESH_OTSU,
+    )
+    variants.append(("otsu", otsu))
 
-    function clean(value) {
-        return String(value || "").trim().replace(/\s+/g, "");
-    }
+    adaptive = cv2.adaptiveThreshold(
+        gray,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        7,
+    )
+    variants.append(("adaptive", adaptive))
+    variants.append(
+        ("inverted", cv2.bitwise_not(gray))
+    )
 
-    function valid(value) {
-        if (!value) return false;
-        if (/^\d+$/.test(value)) {
-            return [8, 12, 13, 14].includes(value.length);
-        }
-        return value.length >= 4;
-    }
+    found = {}
 
-    async function loadLibrary() {
-        if (window.Html5Qrcode && window.Html5QrcodeSupportedFormats) {
-            return;
-        }
+    symbols = [
+        ZBarSymbol.EAN13,
+        ZBarSymbol.EAN8,
+        ZBarSymbol.UPCA,
+        ZBarSymbol.UPCE,
+        ZBarSymbol.CODE128,
+        ZBarSymbol.CODE39,
+        ZBarSymbol.CODE93,
+        ZBarSymbol.ITF,
+        ZBarSymbol.CODABAR,
+    ]
 
-        const sources = [
-            "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
-            "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
-        ];
+    for variant_name, image in variants:
+        try:
+            decoded = zbar_decode(
+                image,
+                symbols=symbols,
+            )
+        except Exception:
+            continue
 
-        for (const src of sources) {
-            try {
-                await new Promise((resolve, reject) => {
-                    const old = document.querySelector(
-                        'script[data-holland-scanner="1"]'
-                    );
+        for item in decoded:
+            try:
+                value = (
+                    item.data
+                    .decode(
+                        "utf-8",
+                        errors="ignore",
+                    )
+                    .strip()
+                )
+            except Exception:
+                continue
 
-                    if (old) {
-                        old.remove();
-                    }
+            if not value:
+                continue
 
-                    const script = document.createElement("script");
-                    script.src = src;
-                    script.async = true;
-                    script.dataset.hollandScanner = "1";
+            barcode_type = str(
+                getattr(item, "type", "UNKNOWN")
+            )
+            quality = getattr(item, "quality", None)
 
-                    script.onload = () => {
-                        if (
-                            window.Html5Qrcode &&
-                            window.Html5QrcodeSupportedFormats
-                        ) {
-                            resolve();
-                        } else {
-                            reject(new Error("library api missing"));
-                        }
-                    };
+            key = (value, barcode_type)
 
-                    script.onerror = () => reject(new Error("cdn failed"));
-                    document.head.appendChild(script);
-                });
-
-                return;
-            } catch (e) {}
-        }
-
-        throw new Error("barcode library unavailable");
-    }
-
-    function formats() {
-        const F = window.Html5QrcodeSupportedFormats;
-
-        return [
-            F.EAN_13,
-            F.EAN_8,
-            F.UPC_A,
-            F.UPC_E,
-            F.CODE_128,
-            F.CODE_39,
-            F.CODE_93,
-            F.ITF,
-            F.CODABAR
-        ].filter(v => v !== undefined && v !== null);
-    }
-
-    async function stop() {
-        if (!scanner || !running) {
-            startButton.disabled = false;
-            stopButton.disabled = true;
-            return;
-        }
-
-        try {
-            await scanner.stop();
-        } catch (e) {}
-
-        try {
-            scanner.clear();
-        } catch (e) {}
-
-        running = false;
-        startButton.disabled = false;
-        stopButton.disabled = true;
-        setStatus("جاهز");
-    }
-
-    async function success(decodedText) {
-        if (reported) return;
-
-        const value = clean(decodedText);
-        if (!valid(value)) return;
-
-        reported = true;
-        resultValue.textContent = value;
-        resultBox.classList.add("visible");
-        setStatus("تمت القراءة");
-
-        await stop();
-
-        setTriggerValue("barcode", value);
-    }
-
-    async function start() {
-        if (running) return;
-
-        clearError();
-        resultBox.classList.remove("visible");
-        resultValue.textContent = "";
-        reported = false;
-
-        try {
-            setStatus("تحميل محرك القراءة...");
-            await loadLibrary();
-
-            // IMPORTANT CHANGE:
-            // Do NOT call getCameras()/enumerateDevices().
-            // Request the environment camera directly.
-            // This avoids camera-enumeration failures on some
-            // browsers/hosted Streamlit deployments.
-            scanner = new window.Html5Qrcode(
-                reader.id,
-                {
-                    formatsToSupport: formats(),
-                    useBarCodeDetectorIfSupported: true,
-                    verbose: false
+            if key not in found:
+                found[key] = {
+                    "value": value,
+                    "type": barcode_type,
+                    "quality": quality,
+                    "variant": variant_name,
                 }
-            );
 
-            setStatus("طلب تشغيل الكاميرا...");
+    results = list(found.values())
+    results.sort(
+        key=lambda x: (
+            not x["value"].isdigit(),
+            -len(x["value"]),
+            -(x["quality"] or 0),
+        )
+    )
+    return results
 
-            const config = {
-                fps: 15,
-                aspectRatio: 1.7777778,
-                qrbox: function(width, height) {
-                    return {
-                        width: Math.floor(width * 0.90),
-                        height: Math.max(
-                            120,
-                            Math.min(
-                                Math.floor(height * 0.32),
-                                240
-                            )
-                        )
-                    };
-                },
-                disableFlip: true
-            };
 
-            await scanner.start(
-                { facingMode: { ideal: "environment" } },
-                config,
-                success,
-                function() {}
-            );
+def barcode_matches_database(results):
+    if not results:
+        return None
 
-            running = true;
-            startButton.disabled = true;
-            stopButton.disabled = false;
-            setStatus("وجّه الباركود إلى الإطار");
+    for result in results:
+        value = result["value"]
+        exact = df[
+            (df["0"] == value)
+            | (df["1"] == value)
+        ]
+        if not exact.empty:
+            return result
 
-            // Try continuous autofocus / modest zoom when supported.
-            setTimeout(async () => {
-                try {
-                    const caps =
-                        scanner.getRunningTrackCapabilities();
+    return results[0]
 
-                    const advanced = {};
 
-                    if (
-                        caps &&
-                        caps.focusMode &&
-                        caps.focusMode.includes("continuous")
-                    ) {
-                        advanced.focusMode = "continuous";
-                    }
+def camera_scanner_ui():
+    st.subheader("📷 قارئ الباركود")
+    st.caption(
+        "استخدم كاميرا الجهاز لالتقاط صورة واضحة للباركود، "
+        "ثم سيقوم النظام بقراءته والبحث عنه."
+    )
 
-                    if (
-                        caps &&
-                        caps.zoom &&
-                        caps.zoom.max > caps.zoom.min
-                    ) {
-                        advanced.zoom =
-                            caps.zoom.min +
-                            (caps.zoom.max - caps.zoom.min) * 0.20;
-                    }
+    with st.container(border=True):
+        st.markdown("### طريقة الاستخدام")
+        st.write("1. اضغط على زر الكاميرا.")
+        st.write("2. قرّب الباركود واجعله مستقيماً وواضحاً.")
+        st.write("3. التقط الصورة.")
+        st.write("4. سيقرأ النظام الباركود تلقائياً.")
 
-                    if (Object.keys(advanced).length) {
-                        await scanner.applyVideoConstraints({
-                            advanced: [advanced]
-                        });
-                    }
-                } catch (e) {}
-            }, 900);
+        camera_photo = st.camera_input(
+            "📷 التقاط صورة للباركود",
+            key="warehouse_barcode_camera_v4",
+            resolution="1080p",
+            label_visibility="visible",
+        )
 
-        } catch (error) {
-            console.error("Holland Bazar camera error:", error);
+    uploaded_photo = st.file_uploader(
+        "أو ارفع صورة باركود من الجهاز",
+        type=["jpg", "jpeg", "png", "webp"],
+        key="barcode_image_upload_v4",
+    )
 
-            await stop();
+    photo = (
+        camera_photo
+        if camera_photo is not None
+        else uploaded_photo
+    )
 
-            const msg = String(error || "").toLowerCase();
+    if photo is None:
+        st.info(
+            "📷 اضغط على الكاميرا أعلاه لالتقاط صورة."
+        )
+        return
 
-            if (
-                msg.includes("notallowed") ||
-                msg.includes("permission") ||
-                msg.includes("denied")
-            ) {
-                showError(
-                    "المتصفح رفض الوصول إلى الكاميرا. رغم إعطاء الصلاحية، أعد تحميل الصفحة ثم اضغط تشغيل الكاميرا مرة أخرى."
-                );
-            } else if (
-                msg.includes("notfound") ||
-                msg.includes("no camera")
-            ) {
-                showError(
-                    "لم يتم العثور على كاميرا. جرّب فتح الموقع من Chrome وتأكد أن الكاميرا تعمل."
-                );
-            } else if (
-                msg.includes("notreadable") ||
-                msg.includes("trackstart")
-            ) {
-                showError(
-                    "الكاميرا مستخدمة من برنامج آخر. أغلق Camera/Teams/Zoom وأعد المحاولة."
-                );
-            } else if (
-                msg.includes("library")
-            ) {
-                showError(
-                    "لم يتم تحميل محرك الباركود. أعد تحميل الصفحة وتأكد من اتصال الإنترنت."
-                );
-            } else {
-                showError(
-                    "فشل تشغيل الكاميرا. افتح أدوات المطور في Chrome لرؤية الخطأ التفصيلي."
-                );
-            }
-        }
-    }
+    left, right = st.columns(
+        [1.35, 1],
+        gap="large",
+    )
 
-    async function scanFile(file) {
-        if (!file) return;
+    with left:
+        st.image(
+            photo,
+            caption="الصورة الملتقطة",
+            width="stretch",
+        )
 
-        clearError();
-        reported = false;
+    with right:
+        with st.spinner("جاري قراءة الباركود..."):
+            results = barcode_candidates_from_image(photo)
 
-        try {
-            setStatus("تحليل الصورة...");
-            await loadLibrary();
+        if not results:
+            st.error(
+                "لم يتم العثور على باركود واضح في الصورة."
+            )
+            st.warning(
+                "قرّب الكاميرا من الباركود، "
+                "اجعل الخطوط كلها ظاهرة، "
+                "وتجنب الانعكاس أو الضبابية."
+            )
+            return
 
-            if (!scanner) {
-                scanner = new window.Html5Qrcode(
-                    reader.id,
-                    {
-                        formatsToSupport: formats(),
-                        useBarCodeDetectorIfSupported: true,
-                        verbose: false
-                    }
-                );
-            }
+        best = barcode_matches_database(results)
 
-            const value = await scanner.scanFile(file, false);
+        st.success("تمت قراءة الباركود")
+        st.metric("الباركود", best["value"])
+        st.caption(f"نوع الباركود: {best['type']}")
 
-            await success(value);
+        matching = df[
+            (df["0"] == best["value"])
+            | (df["1"] == best["value"])
+        ]
 
-        } catch (error) {
-            console.error("Holland Bazar image scan:", error);
-            showError(
-                "لم يتم العثور على باركود واضح في الصورة. قرّب الملصق وصوّره بشكل مستقيم."
-            );
-        }
-    }
+        if not matching.empty:
+            show_product(matching.iloc[0])
+        else:
+            st.warning(
+                "تمت قراءة الرقم، لكنه غير موجود في قاعدة البيانات."
+            )
+            show_similar(best["value"])
 
-    startButton.addEventListener("click", start);
-    stopButton.addEventListener("click", stop);
-
-    fileButton.addEventListener(
-        "click",
-        () => fileInput.click()
-    );
-
-    fileInput.addEventListener(
-        "change",
-        event => {
-            const file =
-                event.target.files &&
-                event.target.files[0];
-
-            if (file) scanFile(file);
-            fileInput.value = "";
-        }
-    );
-
-    // Preload the library without requesting camera permission.
-    loadLibrary()
-        .then(() => setStatus("جاهز"))
-        .catch(() => setStatus("جاهز"));
-
-    return () => {
-        try {
-            if (scanner && running) {
-                scanner.stop().catch(() => {});
-            }
-        } catch (e) {}
-    };
-}
-"""
-
-barcode_component = components.component(
-    "holland_bazar_barcode_scanner_v3",
-    html=SCANNER_HTML,
-    css=SCANNER_CSS,
-    js=SCANNER_JS,
-)
+        if len(results) > 1:
+            with st.expander(
+                "قراءات أخرى من نفس الصورة"
+            ):
+                for result in results[:5]:
+                    st.write(
+                        f"{result['value']} — "
+                        f"{result['type']}"
+                    )
 
 
 
@@ -1216,33 +971,15 @@ with search_tab:
 # CAMERA SCANNER
 # ============================================================
 
+
 with scanner_tab:
 
-    with st.container(border=True):
-
-        st.subheader("📷 قارئ الباركود")
-        st.caption(
-            "القارئ يعمل داخل المتصفح مباشرة. "
-            "اضغط تشغيل الكاميرا ثم وجّه الكاميرا إلى الباركود."
+    if not ZBAR_AVAILABLE:
+        st.error(
+            "محرك قراءة الباركود غير مثبت. "
+            "تأكد من وجود pyzbar في requirements.txt "
+            "و libzbar0 في packages.txt."
         )
+        st.stop()
 
-        result = barcode_component(
-            key="warehouse_scanner_v3",
-            on_barcode_change=lambda: None,
-        )
-
-        scanned = None
-
-        try:
-            scanned = result.barcode
-        except Exception:
-            scanned = None
-
-        if scanned:
-            st.success(
-                f"تمت قراءة الباركود: {scanned}"
-            )
-
-            perform_search(
-                scanned
-            )
+    camera_scanner_ui()
